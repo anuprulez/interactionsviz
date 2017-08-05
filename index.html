@@ -1,0 +1,57 @@
+<DOCTYPE html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/jquery.mCustomScrollbar.min.css">
+    <link rel="stylesheet" type="text/css" href="css/rnainteraction.base.css"/>
+
+  </head>
+  <body>
+    
+<div class="container">
+  <div class="row">
+    <div class="col-sm-3">
+      <h3 class="heading">RNA Interactions</h1>
+    </div>
+    <div class="col-sm-3">
+      <input type="text" class="search-gene elem-width" value="" placeholder="type gene id...">
+    </div>
+    <div class="col-sm-3">
+      <select name="filter" class="rna-filter elem-width">
+        <option value="choose">Filter by...</option>
+	<option value="score">Score</option>
+	<option value="family">RNA Family</option>
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <select name="sort" class="rna-sort elem-width">
+        <option value="choose">Sort by...</option>
+	<option value="abundance">By abundance</option>
+	<option value="score">By score</option>
+      </select>
+    </div>
+  </div>
+  <div class="row rna-results">
+    <div class="col-sm-5 rna-transcriptions-container">
+      <div class="loading">
+        <img src="https://cdn0.iconfinder.com/data/icons/duesseldorf/32/process.png" />
+	loading results...
+      </div>
+      <div class="transcriptions-ids">
+      </div>
+    </div>
+    <div class="col-sm-4 first-gene">
+      RNA Gene 1
+    </div>
+    <div class="col-sm-3 second-gene">
+      RNA Gene 2
+    </div>
+  </div>
+</div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/underscore.min.js"></script>
+    <script type="text/javascript" src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+    <script src="js/rnainteraction.js"></script>
+  </body>
+</html>

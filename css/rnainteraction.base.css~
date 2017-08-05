@@ -1,0 +1,53 @@
+.heading {
+    margin-left: 5.5%;
+}
+
+.left-container {
+    padding-left: 0;
+}
+
+.elem-width {
+    width: 100%;
+    margin-top: 8%;
+}
+
+.rna-transcriptions-container {
+    padding-right: 4%;
+    padding-left: 0;
+    border-right: 1px solid black;
+}
+
+.rna-results {
+    margin-top: 1%;
+    border-top: 1px solid black;
+}
+
+.transcriptions-ids {
+    height: 80%;
+    overflow: auto;
+}
+
+.loading { 
+    display:none;
+    padding-left: 150px;
+}
+
+.loading img {
+    width: 20px;
+    height: 20px;
+    margin-top: 1%;
+}
+
+.first-gene {
+    height: 80%;
+    border-right: 1px solid black;
+}
+
+.second-gene {
+    height: 80%;
+}
+
+
+
+
+
