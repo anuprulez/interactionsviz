@@ -8,7 +8,7 @@ How to use:
 
 2. Move to $ cd interactionsviz
 
-3. Run python server: $ python rna_server.py <<data file name e.g. interactions.tsv>> <<port number e.g. 8001>> 
+3. Run python server: $ python rna_server.py data_file_name port_number
    example: $ python rna_server.py interactions.tsv 8001
 
 4. Open browser and browse to: http://<<your domain name:port>>/index.html
