@@ -2,6 +2,8 @@ $(document).ready(function() {
     
     var transcription_records = [];
     var min_query_length = 3;
+    var host = window.location.hostname;
+    var port = window.location.port;
 
     var build_fancy_scroll = function() {
         // add fancy scroll bar
@@ -17,14 +19,13 @@ $(document).ready(function() {
         _.each( records, function( record ) {
             template = template + '<div class="rna-pair" id="'+ record[ 'chimeraid' ] +'">' + record[ 'txid1' ] + '-' + record[ 'txid2' ]  + '</div>';
         });
-        if( $('.mCustomScrollbar').length ) {
+        if( $( '.mCustomScrollbar' ).length ) {
             $( '.transcriptions-ids .mCSB_container' ).empty().html( template );
         }
         else {
             $( '.transcriptions-ids' ).html( template );
             build_fancy_scroll();
         }
-        
         register_events();
     };
 
@@ -33,7 +34,7 @@ $(document).ready(function() {
         var $el_transcriptions_ids = $( '.transcriptions-ids' );
         var $el_loading = $( '.loading' );
         var template = "";
-        var searchable_fields = ['symbol1', 'symbol2', 'geneid1', 'geneid2'];
+        var searchable_fields = [ 'symbol1', 'symbol2', 'geneid1', 'geneid2' ];
         var found_records = []
         _.each( transcription_records, function( record ) {
             if( record[ searchable_fields[ 0 ] ].indexOf( query ) > -1 ||
@@ -52,7 +53,9 @@ $(document).ready(function() {
 
     var register_events = function() {
         var $el_rna_pair = $( '.rna-pair' ),
-            $el_search_gene = $( '.search-gene' );
+            $el_search_gene = $( '.search-gene' ),
+            $el_sort = $( '.rna-sort' ),
+            $el_filter = $( '.rna-filter' );
 
         // highlight the transaction pair
         $el_rna_pair.on( 'mouseenter', function(){
@@ -93,29 +96,33 @@ $(document).ready(function() {
                 search_gene( query );
             }
         });
+
+        $el_sort.on( 'change', function( e ) {
+            show_data( $( this )[ 0 ].value );
+        });
     };
 
-    var show_data = function() {
-        var host = window.location.hostname,
-            port = window.location.port,
-            url = "http://" + host + ":" + port + "/?q=showdata";
+    var show_data = function( sortby ) {
+        var url = "http://" + host + ":" + port + "/?q=" + sortby;
         // show loading while data is being pulled asynchronously
-        $(".loading").css("display", "block");
+        $(".loading").css( "display", "block" );
         // pull all the data
 	$.get( url, function( result ) {
-            var records = result.split("\n");
+            var records = result.split("\n"),
+                rna_records = [];
             // create template for all pairs
             _.each(records, function( record ){
                 record = JSON.parse( record );
-                transcription_records.push( record );
+                rna_records.push( record );
             });
-            build_left_panel( transcription_records );
+            transcription_records = rna_records;
+            build_left_panel( rna_records );
             $(".loading").css("display", "none");
 	});
     };
 
     // load the pairs of interaction ids
-    show_data();
+    show_data( 'score' );
 });
 
 
