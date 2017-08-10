@@ -1,8 +1,8 @@
 import socket
 import sys
 import re
-import math
 import json
+from operator import itemgetter
 
 
 class RNAInteraction:
@@ -12,28 +12,42 @@ class RNAInteraction:
     def __init__( self ):
         """ Init method. """
         self.record_list = []
+        self.record_attributes = [];
 
     @classmethod
     def read_from_file(self, file_path):
+        show_all = False
+        default_sort_field = 'score'
+        how_many = 1000
+        sort_direction = 'desc'
         with open(file_path) as file:
             data_list = list()
             record_id = 0
-            data_attributes = list()
             for record in file:
                 if record_id == 10000:
                     break
                 record = record.split("\n")
                 if record_id == 0:
-                    data_attributes = record[0].split("\t")
+                    self.record_attributes = record[0].split("\t")
                 else:
                     attr = dict()
                     data_record = record[0].split("\t")
-                    for index, item in enumerate(data_attributes):
+                    for index, item in enumerate(self.record_attributes):
                         attr[ item ] = data_record[ index ]
                     self.record_list.append(attr)
                 record_id += 1
-            return self.record_list
+            if show_all:
+                return self.record_list
+            else:
+                return self.top_results(default_sort_field, sort_direction, how_many)
 
+    @classmethod
+    def top_results(self, attr, sort_direction, how_many):
+        sort_field_pos = self.record_attributes.index(attr)
+        if( sort_direction == 'desc' ):
+            return sorted(self.record_list, key=itemgetter( attr ), reverse=True)[:how_many]
+        else:
+            return sorted(self.record_list, key=itemgetter( attr ))[:how_many]
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
