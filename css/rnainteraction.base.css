@@ -1,3 +1,8 @@
+
+body {
+    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
+}
+
 .heading {
     margin-left: 5.5%;
 }
@@ -12,18 +17,19 @@
 }
 
 .rna-transcriptions-container {
-    padding-right: 4%;
     padding-left: 0;
+    height: 100%;
     border-right: 1px solid black;
 }
 
 .rna-results {
+    height: 80%;
     margin-top: 1%;
     border-top: 1px solid black;
+    border-bottom: 1px solid black;
 }
 
 .transcriptions-ids {
-    height: 80%;
     overflow: auto;
 }
 
@@ -39,12 +45,13 @@
 }
 
 .first-gene {
-    height: 80%;
+    height: 100%;
     border-right: 1px solid black;
 }
 
-.second-gene {
-    height: 80%;
+.pair-mouseenter {
+    background-color: #dfe3ee;
+    cursor: pointer;
 }
 
 
