@@ -4,8 +4,9 @@ var RNAInteractions = {
     min_query_length: 3,
     host: window.location.hostname,
     port: window.location.port,
+    sort_field: 'score',
+    search_text: "",
     
-
     build_fancy_scroll: function() {
         // add fancy scroll bar
         $( '.transcriptions-ids' ).mCustomScrollbar({
@@ -20,7 +21,8 @@ var RNAInteractions = {
             self = this,
             $el_transcriptions_ids = $( '.transcriptions-ids' );
         _.each( records, function( record ) {
-            template = template + '<div class="rna-pair" id="'+ record[ 'chimeraid' ] +'">' + record[ 'txid1' ] + '-' + record[ 'txid2' ]  + '</div>';
+            template = template + '<div class="rna-pair"><input type="checkbox" id="'+ record[ 'chimeraid' ] +'" value="" />' +
+                       '<span>' + record[ 'txid1' ] + '-' + record[ 'txid2' ]  + '</span></div>';
         });
         if( $( '.mCustomScrollbar' ).length ) {
             $( '.transcriptions-ids .mCSB_container' ).empty().html( template );
@@ -33,26 +35,27 @@ var RNAInteractions = {
         self.register_events();
     },
 
-    // Search for geneid/symbols
-    search_gene: function( query ) {
-        var self = this,
-            $el_transcriptions_ids = $( '.transcriptions-ids' ),
-            template = "",
-            searchable_fields = [ 'symbol1', 'symbol2', 'geneid1', 'geneid2' ],
-            found_records = [];
-        _.each( self.transcription_records, function( record ) {
-            if( record[ searchable_fields[ 0 ] ].indexOf( query ) > -1 ||
-                record[ searchable_fields[ 1 ] ].indexOf( query ) > -1 ||
-                record[ searchable_fields[ 2 ] ].indexOf( query ) > -1 ||
-                record[ searchable_fields[ 3 ] ].indexOf( query ) > -1 ) {
-                found_records.push( record );
-            }
-        });
-        if ( found_records.length === 0 ) {
-            $el_transcriptions_ids.empty().html( "<div> No results found for the query: "+ query +"</div>" );
-            return;
+    plot_summary_charts: function( dict, container, name ) {
+        var layout = {
+            height:250,
+            width: 400
+        },
+        labels = [],
+        values = [];
+
+        for( var item in  dict ) {
+            labels.push( item );
+            values.push( dict[ item ] ); 
         }
-        self.build_left_panel( found_records );
+
+        var data = [{f
+            values: values,
+            labels: labels,
+            type: 'pie',
+            showlegend: false,
+            title: name
+        }];
+        Plotly.newPlot( container, data, layout );
     },
 
     register_events: function() {
@@ -60,7 +63,8 @@ var RNAInteractions = {
             $el_rna_pair = $( '.rna-pair' ),
             $el_search_gene = $( '.search-gene' ),
             $el_sort = $( '.rna-sort' ),
-            $el_filter = $( '.rna-filter' );
+            $el_filter = $( '.rna-filter' ),
+            $el_summary = $( '.rna-summary' );
 
         // highlight the transaction pair
         $el_rna_pair.on( 'mouseenter', function() {
@@ -74,7 +78,7 @@ var RNAInteractions = {
        
         // add information to the right boxes for the selected pair
         $el_rna_pair.on( 'click', function( e ) {
-            e.preventDefault();
+            //e.preventDefault();
             var rec_id = $( this )[ 0 ].id,
                 $el_first_block = $( '.first-gene' ),
                 $el_second_block = $( '.second-gene' );
@@ -92,42 +96,91 @@ var RNAInteractions = {
             var query = $( this )[ 0 ].value;
             // For no query, just build left panel with complete data
             if ( !query ) {
-                self.build_left_panel( self.transcription_records );
+                self.show_data( 'score', "" );
             }
 
             if( query.length < self.min_query_length ) {
                 return false;
             }
             else {
-                self.search_gene( query );
+                if( e.which === 13 ) { // search on enter click
+                    self.search_text = query;
+                    self.show_data( self.sort_field, query );
+                }
             }
         });
 
         $el_sort.on( 'change', function( e ) {
-            self.show_data( $( this )[ 0 ].value );
+            e.preventDefault();
+            self.sort_field = $( this )[ 0 ].value;
+            self.show_data( $( this )[ 0 ].value, self.search_text );
+        });
+
+        $el_summary.on( 'click', function( e ) {
+            e.preventDefault();
+            var checked_ids = [],
+                checkboxes = $( '.rna-pair' ).find( 'input[type="checkbox"]' ),
+                url = "";
+            _.each( checkboxes, function( item ) {
+                if( item.checked ) {
+                    checked_ids.push( item.id );
+                }
+            });
+            url = "http://" + self.host + ":" + self.port + "/?summary_ids=" + checked_ids
+            $.get( url, function( result ) {
+                var summary = [],
+                    summary_records = result.split( "\n" ),
+                    summary_result_geneid1 = {},
+                    summary_result_geneid2 = {},
+                    summary_result_type1 = {},
+                    summary_result_type2 = {};
+
+                _.each(summary_records, function( record ) {
+                    record = JSON.parse( record );
+                    summary.push( record );
+                });
+
+                // summary fields - geneid, type
+                for ( var i = 0; i < summary.length; i++ ) {
+                    summary_result_geneid1[ summary[ i ].geneid1 ] = ( summary_result_geneid1[ summary[ i ].geneid1 ] || 0 ) + 1;
+                    summary_result_type1[ summary[ i ].type1 ] = ( summary_result_type1[ summary[ i ].type1 ] || 0 ) + 1;
+                    summary_result_geneid2[ summary[ i ].geneid2 ] = ( summary_result_geneid2[ summary[ i ].geneid2 ] || 0 ) + 1;
+                    summary_result_type2[ summary[ i ].type2 ] = ( summary_result_type2[ summary[ i ].type2 ] || 0 ) + 1;
+                }
+
+                self.plot_summary_charts( summary_result_geneid1, "rna-gene1", 'RNA 1 distribution' );
+                self.plot_summary_charts( summary_result_geneid2, "rna-gene2", 'RNA 2 distribution' );
+                self.plot_summary_charts( summary_result_type1, "rna-type1", 'RNA family 1 distribution' );
+                self.plot_summary_charts( summary_result_type2, "rna-type2", 'RNA family 2 distribution' );                
+            });
         });
     },
 
-    show_data: function( sortby ) {
+    show_data: function( sort_by, search_by ) {
         var self = this,
-            url = "http://" + self.host + ":" + self.port + "/?q=" + sortby,
+            url = "http://" + self.host + ":" + self.port + "/?sort=" + sort_by + "&search=" + search_by,
             $el_loading = $( ".loading" ),
             $el_transcriptions_ids = $( '.transcriptions-ids' );
-
         // show loading while data loads asynchronously
+        $( '.mCSB_container' ).empty();
         $el_loading.show();
-        $el_transcriptions_ids.hide();
         // pull all the data
 	$.get( url, function( result ) {
-            var records = result.split( "\n" ),
-                rna_records = [];
-            // create template for all pairs
-            _.each(records, function( record ){
-                record = JSON.parse( record );
-                rna_records.push( record );
-            });
-            self.transcription_records = rna_records;
-            self.build_left_panel( rna_records );
+            if( result.length === 0 ) {
+                $el_transcriptions_ids.html( "<div> No results found. </div>" );
+                $el_transcriptions_ids.show();
+            }
+            else {
+                var records = result.split( "\n" ),
+                    rna_records = [];
+                // create template for all pairs
+                _.each(records, function( record ) {
+                    record = JSON.parse( record );
+                    rna_records.push( record );
+                });
+                self.transcription_records = rna_records;
+                self.build_left_panel( rna_records );
+            }
             $el_loading.hide();
 	});
     }
@@ -136,7 +189,7 @@ var RNAInteractions = {
 
 $(document).ready(function() {
     // load the pairs of interaction ids
-    RNAInteractions.show_data( 'score' );
+    RNAInteractions.show_data( RNAInteractions.sort_field, "" );
 });
 
 

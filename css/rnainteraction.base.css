@@ -1,6 +1,7 @@
 
 body {
     font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
+    font-size: 9pt;
 }
 
 .heading {
@@ -54,6 +55,19 @@ body {
     cursor: pointer;
 }
 
+.rna-summary {
+    margin-top: 2%;
+}
+
+.rna-footer {
+    padding-top: 2%;
+}
+
+#rna-gene1, #rna-gene2 {
+    height: 50%;
+    width: 100%;
+    border-bottom: 1px solid black;
+}
 
 
 
