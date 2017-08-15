@@ -36,7 +36,7 @@ body {
 
 .loading { 
     display:none;
-    padding-left: 150px;
+    padding-left: 50px;
 }
 
 .loading img {
@@ -48,6 +48,7 @@ body {
 .first-gene {
     height: 100%;
     border-right: 1px solid black;
+    overflow: visible;
 }
 
 .pair-mouseenter {
@@ -67,6 +68,13 @@ body {
     height: 50%;
     width: 100%;
     border-bottom: 1px solid black;
+    overflow: auto;
+}
+
+#rna-type1, #rna-type2 {
+    overflow: auto;
+    height: 50%;
+    width: 100%;
 }
 
 

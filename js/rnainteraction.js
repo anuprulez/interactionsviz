@@ -37,8 +37,9 @@ var RNAInteractions = {
 
     plot_summary_charts: function( dict, container, name ) {
         var layout = {
-            height:250,
-            width: 400
+            height:350,
+            width: 550,
+            title: name
         },
         labels = [],
         values = [];
@@ -48,12 +49,10 @@ var RNAInteractions = {
             values.push( dict[ item ] ); 
         }
 
-        var data = [{f
+        var data = [{
             values: values,
             labels: labels,
-            type: 'pie',
-            showlegend: false,
-            title: name
+            type: 'pie'
         }];
         Plotly.newPlot( container, data, layout );
     },
@@ -148,10 +147,10 @@ var RNAInteractions = {
                     summary_result_type2[ summary[ i ].type2 ] = ( summary_result_type2[ summary[ i ].type2 ] || 0 ) + 1;
                 }
 
-                self.plot_summary_charts( summary_result_geneid1, "rna-gene1", 'RNA 1 distribution' );
-                self.plot_summary_charts( summary_result_geneid2, "rna-gene2", 'RNA 2 distribution' );
-                self.plot_summary_charts( summary_result_type1, "rna-type1", 'RNA family 1 distribution' );
-                self.plot_summary_charts( summary_result_type2, "rna-type2", 'RNA family 2 distribution' );                
+                self.plot_summary_charts( summary_result_geneid1, "rna-gene1", 'RNA gene 1 distribution' );
+                self.plot_summary_charts( summary_result_geneid2, "rna-gene2", 'RNA gene 2 distribution' );
+                self.plot_summary_charts( summary_result_type1, "rna-type1", 'RNA gene 1 family distribution' );
+                self.plot_summary_charts( summary_result_type2, "rna-type2", 'RNA gene 2 family distribution' );                
             });
         });
     },
