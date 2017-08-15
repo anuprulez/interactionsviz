@@ -16,4 +16,4 @@ How to use:
    example: My system's root is: anupkumar@anupkumar-pc
    So the url for me is: http://anupkumar-pc:8001/index.html
 
-5. The left section loads the pair of transaction ids. On selecting a pair, the respective ids are printed the in right sections.
+5. The left section loads the pairs of transaction ids. On selecting a pair or multiple pairs, a summary of interactions is shown in the form of charts.

@@ -44,7 +44,10 @@ class RNAInteraction:
     @classmethod
     def make_summary( self, file_path, summary_record_ids ):
         """ Select data for making summary plots """
-        summary_record_ids = str( tuple( str( summary_record_ids ).split( ',' ) ) )
+        if len( summary_record_ids.split( ',' ) ) == 1:
+            summary_record_ids = "('" + summary_record_ids + "')"
+        else:
+            summary_record_ids = str( tuple( str( summary_record_ids ).split( ',' ) ) )
         command = "SELECT * FROM interactions WHERE chimeraid IN "  +  summary_record_ids + " ORDER BY " + self.default_order_by + " DESC"
         return self.execute_sql_query( command, file_path )
 
