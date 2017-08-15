@@ -2,9 +2,8 @@ import socket
 import sys
 import re
 import json
-import math
-from operator import itemgetter
 import urlparse
+import sqlite3
 
 
 class RNAInteraction:
@@ -13,68 +12,42 @@ class RNAInteraction:
     @classmethod
     def __init__( self ):
         """ Init method. """
-        self.float_fields = [ 'score', 'score1', 'score2' ]
+        self.default_order_by = 'score'
         self.searchable_fields = [ 'symbol1', 'symbol2', 'geneid1', 'geneid2' ]
         self.id_field = 'chimeraid'
         self.total_records = 10000
         self.field_names = []
 
     @classmethod
-    def read_from_file( self, file_path ):
-        with open( file_path ) as file:
-            record_id = 0
-            records = list()
-            for record in file:
-                if record_id > self.total_records:
-                    break
-                record = record.split( "\n" )
-                if record_id == 0:
-                    self.field_names = record[ 0 ].split( "\t" )
-                else:
-                    attr = dict()
-                    data_record = record[ 0 ].split( "\t" )
-                    for index, item in enumerate( self.field_names  ):
-                        if item in self.float_fields:
-                            attr[ item ] = float( data_record[ index ] )
-                        else:
-                            attr[ item ] = data_record[ index ]
-                    records.append( attr )
-                record_id = record_id + 1
-        return self.field_names, records
+    def execute_sql_query( self, command, file_path ):
+        """ Execute sqlite query and fetch data """
+        connection = sqlite3.connect( file_path )
+        cursor = connection.cursor()
+        cursor.execute( command )
+        all_data = cursor.fetchall()
+        connection.close()
+        return all_data
 
     @classmethod
-    def extract_results( self, file_path, search_by, sort_by='score', how_many=1000, sort_direction='desc' ):
-        record_attributes, record_list = self.read_from_file( file_path )
-        return self.top_results( record_attributes, record_list, search_by, sort_by, how_many, sort_direction )
+    def read_from_file( self, file_path, how_many=1000 ):
+        """ Select data for the first load """
+        command = 'SELECT * FROM interactions ORDER BY ' + self.default_order_by + ' DESC'
+        all_data = self.execute_sql_query( command, file_path )
+        return all_data[ :how_many ]
+        
+    @classmethod
+    def search_data( self, file_path, search_query, how_many=1000 ):
+        """ Select data based on a search query """
+        command = 'SELECT * FROM interactions WHERE '  + self.searchable_fields[ 2 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' ORDER BY ' + self.default_order_by + ' DESC'
+        all_data = self.execute_sql_query( command, file_path )
+        return all_data[ :how_many ]
 
     @classmethod
-    def top_results( self, record_attributes, record_list, search_by, sort_by, how_many, sort_direction  ):
-        if not sort_by:
-            return record_list[ :how_many ]
-        sort_field_pos = record_attributes.index( sort_by )
-        sorted_results = sorted( record_list, key=itemgetter( sort_by ), reverse=( sort_direction == 'desc' ) )
-        matches = []
-        if search_by:
-            for index, record in enumerate( sorted_results ):
-                if search_by in record[ self.searchable_fields[ 0 ] ] or search_by in record[ self.searchable_fields[ 1 ] ] or search_by in record[ self.searchable_fields[ 2 ] ] or search_by in record[ self.searchable_fields[ 3 ] ]:
-                    matches.append( record )
-            match_length = len( matches )
-            if match_length > 0:
-                if match_length > how_many:
-                    return matches[ :how_many ]
-                else:
-                    return matches
-            else:
-                return False
-        else:
-            return sorted_results[ :how_many ]
-
-    @classmethod
-    def make_summary( self, file_path, summary_ids ):
-        record_attributes, record_list = self.read_from_file( file_path )
-        ids = summary_ids.split( ',' )
-        summary = [ record for record in record_list if record[ self.id_field ] in ids ]
-        return summary
+    def make_summary( self, file_path, summary_record_ids ):
+        """ Select data for making summary plots """
+        summary_record_ids = str( tuple( str( summary_record_ids ).split( ',' ) ) )
+        command = "SELECT * FROM interactions WHERE chimeraid IN "  +  summary_record_ids + " ORDER BY " + self.default_order_by + " DESC"
+        return self.execute_sql_query( command, file_path )
 
 
 if __name__ == "__main__":
@@ -114,17 +87,16 @@ if __name__ == "__main__":
             params = urlparse.parse_qs( parsed_query.query )
             if( "summary_ids" in query ):
                 summary_ids = params[ 'summary_ids' ][ 0 ]
-                summary = data.make_summary(file_name, summary_ids)
+                summary = data.make_summary( file_name, summary_ids )
                 for item in summary:
                     content += json.dumps( item ) + '\n'
             elif( "?" in query ):
-                sort_by = ""
                 search_by = ""
-                if 'sort' in params:
-                    sort_by = params[ 'sort' ][ 0 ]
                 if 'search' in params:
                     search_by = params[ 'search' ][ 0 ]
-                results = data.extract_results( file_name, search_by, sort_by )
+                    results = data.search_data( file_name, search_by )
+                else:
+                    results = data.read_from_file( file_name )
                 if( results ):
                     for item in results:
                         content += json.dumps( item ) + '\n'

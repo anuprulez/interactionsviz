@@ -4,7 +4,6 @@ var RNAInteractions = {
     min_query_length: 3,
     host: window.location.hostname,
     port: window.location.port,
-    sort_field: 'score',
     search_text: "",
     
     build_fancy_scroll: function() {
@@ -21,8 +20,8 @@ var RNAInteractions = {
             self = this,
             $el_transcriptions_ids = $( '.transcriptions-ids' );
         _.each( records, function( record ) {
-            template = template + '<div class="rna-pair"><input type="checkbox" id="'+ record[ 'chimeraid' ] +'" value="" />' +
-                       '<span>' + record[ 'txid1' ] + '-' + record[ 'txid2' ]  + '</span></div>';
+            template = template + '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" />' +
+                       '<span>' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
         });
         if( $( '.mCustomScrollbar' ).length ) {
             $( '.transcriptions-ids .mCSB_container' ).empty().html( template );
@@ -95,7 +94,7 @@ var RNAInteractions = {
             var query = $( this )[ 0 ].value;
             // For no query, just build left panel with complete data
             if ( !query ) {
-                self.show_data( 'score', "" );
+                self.show_data( "" );
             }
 
             if( query.length < self.min_query_length ) {
@@ -104,7 +103,7 @@ var RNAInteractions = {
             else {
                 if( e.which === 13 ) { // search on enter click
                     self.search_text = query;
-                    self.show_data( self.sort_field, query );
+                    self.show_data( query );
                 }
             }
         });
@@ -112,17 +111,17 @@ var RNAInteractions = {
         $el_sort.on( 'change', function( e ) {
             e.preventDefault();
             self.sort_field = $( this )[ 0 ].value;
-            self.show_data( $( this )[ 0 ].value, self.search_text );
+            self.show_data( self.search_text );
         });
 
         $el_summary.on( 'click', function( e ) {
             e.preventDefault();
-            var checked_ids = [],
+            var checked_ids = "",
                 checkboxes = $( '.rna-pair' ).find( 'input[type="checkbox"]' ),
                 url = "";
             _.each( checkboxes, function( item ) {
                 if( item.checked ) {
-                    checked_ids.push( item.id );
+                    checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
                 }
             });
             url = "http://" + self.host + ":" + self.port + "/?summary_ids=" + checked_ids
@@ -138,13 +137,12 @@ var RNAInteractions = {
                     record = JSON.parse( record );
                     summary.push( record );
                 });
-
                 // summary fields - geneid, type
                 for ( var i = 0; i < summary.length; i++ ) {
-                    summary_result_geneid1[ summary[ i ].geneid1 ] = ( summary_result_geneid1[ summary[ i ].geneid1 ] || 0 ) + 1;
-                    summary_result_type1[ summary[ i ].type1 ] = ( summary_result_type1[ summary[ i ].type1 ] || 0 ) + 1;
-                    summary_result_geneid2[ summary[ i ].geneid2 ] = ( summary_result_geneid2[ summary[ i ].geneid2 ] || 0 ) + 1;
-                    summary_result_type2[ summary[ i ].type2 ] = ( summary_result_type2[ summary[ i ].type2 ] || 0 ) + 1;
+                    summary_result_geneid1[ summary[ i ][ 4 ] ] = ( summary_result_geneid1[ summary[ i ][ 4 ] ] || 0 ) + 1;
+                    summary_result_type1[ summary[ i ][ 8 ] ] = ( summary_result_type1[ summary[ i ][ 8 ] ] || 0 ) + 1;
+                    summary_result_geneid2[ summary[ i ][ 5 ] ] = ( summary_result_geneid2[ summary[ i ][ 5 ] ] || 0 ) + 1;
+                    summary_result_type2[ summary[ i ][ 9 ] ] = ( summary_result_type2[ summary[ i ][ 9 ] ] || 0 ) + 1;
                 }
 
                 self.plot_summary_charts( summary_result_geneid1, "rna-gene1", 'RNA gene 1 distribution' );
@@ -155,9 +153,9 @@ var RNAInteractions = {
         });
     },
 
-    show_data: function( sort_by, search_by ) {
+    show_data: function( search_by ) {
         var self = this,
-            url = "http://" + self.host + ":" + self.port + "/?sort=" + sort_by + "&search=" + search_by,
+            url = "http://" + self.host + ":" + self.port + "/?search=" + search_by,
             $el_loading = $( ".loading" ),
             $el_transcriptions_ids = $( '.transcriptions-ids' );
         // show loading while data loads asynchronously
@@ -188,7 +186,7 @@ var RNAInteractions = {
 
 $(document).ready(function() {
     // load the pairs of interaction ids
-    RNAInteractions.show_data( RNAInteractions.sort_field, "" );
+    RNAInteractions.show_data( "" );
 });
 
 
