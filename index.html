@@ -10,23 +10,29 @@
 <div class="container">
   <div class="row">
     <div class="col-sm-3">
-      <h3 class="heading">RNA Interactions</h1>
-    </div>
-    <div class="col-sm-3">
       <input type="text" class="search-gene elem-width form-control" value="" placeholder="Search..." title="Search">
-    </div>
-    <div class="col-sm-3">
-      <select name="filter" class="rna-filter elem-width form-control" title="Filter">
-        <option value="choose">Filter by...</option>
-	<option value="score">Score</option>
-	<option value="family">RNA Family</option>
-      </select>
     </div>
     <div class="col-sm-3">
       <select name="sort" class="rna-sort elem-width form-control" title="Sort">
         <option value="">Sort by...</option>
 	<option value="score" selected>Score</option>
       </select>
+    </div>
+    <div class="col-sm-6">
+      <select name="filter" class="rna-filter form-control" title="Filter">
+        <option value="choose">Filter by...</option>
+	<option value="score">Score</option>
+	<option value="family">RNA Family</option>
+      </select>
+      <select name="filter-operator" class="filter-operator form-control" title="Filter operator">
+        <option value="choose">Choose operator...</option>
+	<option value="equal">=</option>
+	<option value="greaterthan">></option>
+        <option value="lessthan"><</option>
+        <option value="lessthanequal"><=</option>
+        <option value="greaterthanequal">>=</option>
+      </select>
+      <input type="text" class="filter-value form-control" title="Enter the selected filter's value" value="" placeholder="Enter the selected filter's value..." />
     </div>
   </div>
   <div class="row rna-results">

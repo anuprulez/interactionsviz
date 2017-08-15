@@ -45,6 +45,17 @@ body {
     margin-top: 1%;
 }
 
+.rna-filter, .filter-operator {
+    display: inline-block;
+    width:29%;
+    margin-top: 4%;
+}
+
+.filter-value {
+    display: inline-block;
+    width: 40%;
+}
+
 .first-gene {
     height: 100%;
     border-right: 1px solid black;
