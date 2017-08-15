@@ -6,6 +6,7 @@ var RNAInteractions = {
     port: window.location.port,
     search_text: "",
     
+    /** Build fancy scroll for the interactions */
     build_fancy_scroll: function() {
         // add fancy scroll bar
         $( '.transcriptions-ids' ).mCustomScrollbar({
@@ -14,7 +15,7 @@ var RNAInteractions = {
         $( '.transcriptions-ids .mCSB_dragger_bar' ).css( 'background-color', 'black' );
     },
 
-    // Build the transactions left panel
+    /** Build the left panel */ 
     build_left_panel: function( records ) {
         var template = "",
             self = this,
@@ -34,6 +35,7 @@ var RNAInteractions = {
         self.register_events();
     },
 
+    /** Plot pie charts for interactions chosen for summary */
     plot_summary_charts: function( dict, container, name ) {
         var layout = {
             height:350,
@@ -56,6 +58,7 @@ var RNAInteractions = {
         Plotly.newPlot( container, data, layout );
     },
 
+    /** Register client-side events */
     register_events: function() {
         var self = this,
             $el_rna_pair = $( '.rna-pair' ),
@@ -73,22 +76,8 @@ var RNAInteractions = {
         $el_rna_pair.on( 'mouseleave', function() {
             $( this ).removeClass( 'pair-mouseenter' );
         });
-       
-        // add information to the right boxes for the selected pair
-        $el_rna_pair.on( 'click', function( e ) {
-            //e.preventDefault();
-            var rec_id = $( this )[ 0 ].id,
-                $el_first_block = $( '.first-gene' ),
-                $el_second_block = $( '.second-gene' );
 
-            _.each( self.transcription_records, function( record ) {
-                if ( rec_id === record.chimeraid ) {
-                    $el_first_block.html( '<div>' + record.txid1 + '</div>' );
-                    $el_second_block.html( '<div>' + record.txid2 + '</div>' );
-                }
-            });
-        });
-
+        // search query event
         $el_search_gene.on( 'keyup', function( e ) {
             e.preventDefault();
             var query = $( this )[ 0 ].value;
@@ -108,12 +97,14 @@ var RNAInteractions = {
             }
         });
 
+        // onchange for sort
         $el_sort.on( 'change', function( e ) {
             e.preventDefault();
             self.sort_field = $( this )[ 0 ].value;
             self.show_data( self.search_text );
         });
 
+        // click for checkboxes
         $el_summary.on( 'click', function( e ) {
             e.preventDefault();
             var checked_ids = "",
@@ -124,7 +115,8 @@ var RNAInteractions = {
                     checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
                 }
             });
-            url = "http://" + self.host + ":" + self.port + "/?summary_ids=" + checked_ids
+            url = "http://" + self.host + ":" + self.port + "/?summary_ids=" + checked_ids;
+            // fetch data for summary interactions
             $.get( url, function( result ) {
                 var summary = [],
                     summary_records = result.split( "\n" ),
@@ -137,7 +129,7 @@ var RNAInteractions = {
                     record = JSON.parse( record );
                     summary.push( record );
                 });
-                // summary fields - geneid, type
+                // summary fields - geneid (1 and 2) and type (1 and 2)
                 for ( var i = 0; i < summary.length; i++ ) {
                     summary_result_geneid1[ summary[ i ][ 4 ] ] = ( summary_result_geneid1[ summary[ i ][ 4 ] ] || 0 ) + 1;
                     summary_result_type1[ summary[ i ][ 8 ] ] = ( summary_result_type1[ summary[ i ][ 8 ] ] || 0 ) + 1;
@@ -145,6 +137,7 @@ var RNAInteractions = {
                     summary_result_type2[ summary[ i ][ 9 ] ] = ( summary_result_type2[ summary[ i ][ 9 ] ] || 0 ) + 1;
                 }
 
+                // plot the summary as pie charts
                 self.plot_summary_charts( summary_result_geneid1, "rna-gene1", 'RNA gene 1 distribution' );
                 self.plot_summary_charts( summary_result_geneid2, "rna-gene2", 'RNA gene 2 distribution' );
                 self.plot_summary_charts( summary_result_type1, "rna-type1", 'RNA gene 1 family distribution' );
@@ -153,6 +146,7 @@ var RNAInteractions = {
         });
     },
 
+    /** Show data in the left panel */
     show_data: function( search_by ) {
         var self = this,
             url = "http://" + self.host + ":" + self.port + "/?search=" + search_by,

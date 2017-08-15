@@ -7,16 +7,14 @@ import sqlite3
 
 
 class RNAInteraction:
-    """ A structure to load rna interactions data. """
+    """ A structure to load RNA interactions data. """
 
     @classmethod
     def __init__( self ):
         """ Init method. """
         self.default_order_by = 'score'
-        self.searchable_fields = [ 'symbol1', 'symbol2', 'geneid1', 'geneid2' ]
-        self.id_field = 'chimeraid'
+        self.searchable_fields = [ 'geneid1', 'geneid2' ]
         self.total_records = 10000
-        self.field_names = []
 
     @classmethod
     def execute_sql_query( self, command, file_path ):
@@ -38,7 +36,8 @@ class RNAInteraction:
     @classmethod
     def search_data( self, file_path, search_query, how_many=1000 ):
         """ Select data based on a search query """
-        command = 'SELECT * FROM interactions WHERE '  + self.searchable_fields[ 2 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' ORDER BY ' + self.default_order_by + ' DESC'
+        command = 'SELECT * FROM interactions WHERE '  + self.searchable_fields[ 0 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' OR '  + self.searchable_fields[ 1 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' ORDER BY ' + self.default_order_by + ' DESC'
+        print command
         all_data = self.execute_sql_query( command, file_path )
         return all_data[ :how_many ]
 
