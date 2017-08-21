@@ -24,13 +24,8 @@ var RNAInteractions = {
             template = template + '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" />' +
                        '<span>' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
         });
-        if( $( '.mCustomScrollbar' ).length ) {
-            $( '.transcriptions-ids .mCSB_container' ).empty().html( template );
-        }
-        else {
-            $el_transcriptions_ids.html( template );
-            self.build_fancy_scroll();
-        }
+        $el_transcriptions_ids.html( template );
+        self.build_fancy_scroll();
         $el_transcriptions_ids.show();
         self.register_events();
     },
@@ -58,44 +53,29 @@ var RNAInteractions = {
         Plotly.newPlot( container, data, layout );
     },
 
-    /** Register client-side events */
-    register_events: function() {
+    /** Register events for the page elements */
+    register_page_events: function() {
         var self = this,
-            $el_rna_pair = $( '.rna-pair' ),
             $el_search_gene = $( '.search-gene' ),
             $el_sort = $( '.rna-sort' ),
             $el_filter = $( '.rna-filter' ),
-            $el_summary = $( '.rna-summary' ),
             $el_filter_operator = $( '.filter-operator' ),
             $el_filter_val = $( '.filter-value' );
-
-        // highlight the transaction pair
-        $el_rna_pair.on( 'mouseenter', function() {
-            $( this ).addClass( 'pair-mouseenter' );
-        });
-
-        // remove the highlighted background on focus remove
-        $el_rna_pair.on( 'mouseleave', function() {
-            $( this ).removeClass( 'pair-mouseenter' );
-        });
 
         // search query event
         $el_search_gene.on( 'keyup', function( e ) {
             e.preventDefault();
             var query = $( this )[ 0 ].value;
-            // For no query, just build left panel with complete data
-            if ( !query ) {
-                self.show_data( "" );
-            }
-
-            if( query.length < self.min_query_length ) {
-                return false;
-            }
-            else {
-                if( e.which === 13 ) { // search on enter click
-                    self.search_text = query;
+            if( query.length >= self.min_query_length ) {
+                if( e.which === 13 ) {
                     self.show_data( query );
                 }
+            }
+            else if ( query.length === 0 ) {
+                self.show_data( "" );
+            }
+            else {
+                return false;
             }
         });
 
@@ -127,12 +107,29 @@ var RNAInteractions = {
                 self.show_data( "", url );
             }
         });
+    },
+
+    /** Register client-side events */
+    register_events: function() {
+        var self = this,
+            $el_rna_pair = $( '.rna-pair' ),
+            $el_summary = $( '.rna-summary' );
+
+        // highlight the transaction pair
+        $el_rna_pair.on( 'mouseenter', function() {
+            $( this ).addClass( 'pair-mouseenter' );
+        });
+
+        // remove the highlighted background on focus remove
+        $el_rna_pair.on( 'mouseleave', function() {
+            $( this ).removeClass( 'pair-mouseenter' );
+        });
 
         // click for checkboxes
         $el_summary.on( 'click', function( e ) {
             e.preventDefault();
             var checked_ids = "",
-                checkboxes = $( '.rna-pair' ).find( 'input[type="checkbox"]' ),
+                checkboxes = $el_rna_pair.find( 'input[type="checkbox"]' ),
                 url = "";
             _.each( checkboxes, function( item ) {
                 if( item.checked ) {
@@ -177,17 +174,14 @@ var RNAInteractions = {
         var self = this,
             url = url_text ? url_text : "http://" + self.host + ":" + self.port + "/?search=" + search_by,
             $el_loading = $( ".loading" ),
-            $el_transcriptions_ids = $( '.transcriptions-ids' );
-        // show loading while data loads asynchronously
-        $( '.mCSB_container' ).empty();
+            $el_transcriptions_ids_parent = $( '.rna-transcriptions-container' );
+        
+        $( '.transcriptions-ids' ).remove();
         $el_loading.show();
         // pull all the data
 	$.get( url, function( result ) {
-            if( result.length === 0 ) {
-                $el_transcriptions_ids.html( "<div> No results found. </div>" );
-                $el_transcriptions_ids.show();
-            }
-            else {
+            $el_transcriptions_ids_parent.append( '<div class="transcriptions-ids"></div>' );
+            if( result.length > 0 ) {
                 var records = result.split( "\n" ),
                     rna_records = [];
                 // create template for all pairs
@@ -198,6 +192,10 @@ var RNAInteractions = {
                 self.transcription_records = rna_records;
                 self.build_left_panel( rna_records );
             }
+            else {
+                $( '.transcriptions-ids' ).html( "<div> No results found. </div>" );
+                $( '.transcriptions-ids' ).show();
+            }
             $el_loading.hide();
 	});
     }
@@ -205,6 +203,7 @@ var RNAInteractions = {
 
 
 $(document).ready(function() {
+    RNAInteractions.register_page_events();
     // load the pairs of interaction ids
     RNAInteractions.show_data( "" );
 });
