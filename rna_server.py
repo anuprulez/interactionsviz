@@ -37,7 +37,6 @@ class RNAInteraction:
     def search_data( self, file_path, search_query, how_many=1000 ):
         """ Select data based on a search query """
         command = 'SELECT * FROM interactions WHERE '  + self.searchable_fields[ 0 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' OR '  + self.searchable_fields[ 1 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' ORDER BY ' + self.default_order_by + ' DESC'
-        print command
         all_data = self.execute_sql_query( command, file_path )
         return all_data[ :how_many ]
 
@@ -50,6 +49,36 @@ class RNAInteraction:
             summary_record_ids = str( tuple( str( summary_record_ids ).split( ',' ) ) )
         command = "SELECT * FROM interactions WHERE chimeraid IN "  +  summary_record_ids + " ORDER BY " + self.default_order_by + " DESC"
         return self.execute_sql_query( command, file_path )
+
+    @classmethod
+    def filter_data( self, file_path, params, how_many=1000 ):
+        """ Filter data based on the filter, equality or inequality operator and filter's value """
+        filter_type = params[ "filter_type" ][ 0 ]
+        filter_operator = params[ "filter_op" ][ 0 ]
+        filter_value = params[ "filter_value" ][ 0 ]
+
+        if ( filter_operator == 'equal' ):
+            filter_operator = '='
+        elif ( filter_operator == 'greaterthan' ):
+            filter_operator = '>'
+        elif ( filter_operator == 'lessthan' ):
+            filter_operator = '<'
+        elif ( filter_operator == 'lessthanequal' ):
+            filter_operator = '<='
+        elif( filter_operator == 'greaterthanequal' ):
+            filter_operator = '>='
+        else:
+            filter_operator = "<>"
+
+        if filter_type == 'score':
+           command = "SELECT * FROM interactions WHERE score "  + filter_operator + " " + filter_value  + " ORDER BY " + self.default_order_by + " DESC"
+        elif filter_type == 'family':
+           if filter_operator == '<>':
+               command = "SELECT * FROM interactions WHERE type1 NOT LIKE " + '"%' + filter_value + '%"' + ' AND'  + ' type2' +  ' NOT LIKE ' + '"%' + filter_value + '%"' + " ORDER BY " + self.default_order_by + " DESC"
+           else:
+               command = "SELECT * FROM interactions WHERE type1 LIKE " + '"%' + filter_value + '%"' + ' OR'  + ' type2' +  ' LIKE ' + '"%' + filter_value + '%"' + " ORDER BY " + self.default_order_by + " DESC"
+        all_data = self.execute_sql_query( command, file_path )
+        return all_data[ :how_many ]
 
 
 if __name__ == "__main__":
@@ -92,6 +121,13 @@ if __name__ == "__main__":
                 summary = data.make_summary( file_name, summary_ids )
                 for item in summary:
                     content += json.dumps( item ) + '\n'
+            elif( "filter" in query ):
+                filtered_data = data.filter_data( file_name, params )
+                if( filtered_data ):
+                    for item in filtered_data:
+                        content += json.dumps( item ) + '\n'
+                else:
+                    content = ""
             elif( "?" in query ):
                 search_by = ""
                 if 'search' in params:

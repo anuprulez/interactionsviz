@@ -65,7 +65,9 @@ var RNAInteractions = {
             $el_search_gene = $( '.search-gene' ),
             $el_sort = $( '.rna-sort' ),
             $el_filter = $( '.rna-filter' ),
-            $el_summary = $( '.rna-summary' );
+            $el_summary = $( '.rna-summary' ),
+            $el_filter_operator = $( '.filter-operator' ),
+            $el_filter_val = $( '.filter-value' );
 
         // highlight the transaction pair
         $el_rna_pair.on( 'mouseenter', function() {
@@ -101,7 +103,29 @@ var RNAInteractions = {
         $el_sort.on( 'change', function( e ) {
             e.preventDefault();
             self.sort_field = $( this )[ 0 ].value;
-            self.show_data( self.search_text );
+            self.show_data( "" );
+        });
+
+        // fetch records using filter's value
+        $el_filter_val.on( 'keyup', function( e ) {
+            e.preventDefault();
+            var query = $( this )[ 0 ].value,
+                filter_type = "",
+                filter_operator = "";
+            // For no query, just build left panel with complete data
+            if ( !query ) {
+                self.show_data( "" );
+            }
+
+            if( e.which === 13 ) { // search on enter click
+                filter_type = $el_filter.find( ":selected" ).val();
+                filter_operator = $el_filter_operator.find( ":selected" ).val();
+                if ( filter_type === "-1" || filter_operator === "-1" || query === "" ) {
+                    return;
+                }
+                var url = "http://" + self.host + ":" + self.port + "/?filter_type=" + filter_type + "&filter_op=" + filter_operator + "&filter_value=" + query;
+                self.show_data( "", url );
+            }
         });
 
         // click for checkboxes
@@ -149,9 +173,9 @@ var RNAInteractions = {
     },
 
     /** Show data in the left panel */
-    show_data: function( search_by ) {
+    show_data: function( search_by, url_text ) {
         var self = this,
-            url = "http://" + self.host + ":" + self.port + "/?search=" + search_by,
+            url = url_text ? url_text : "http://" + self.host + ":" + self.port + "/?search=" + search_by,
             $el_loading = $( ".loading" ),
             $el_transcriptions_ids = $( '.transcriptions-ids' );
         // show loading while data loads asynchronously

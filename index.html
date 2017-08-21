@@ -20,17 +20,18 @@
     </div>
     <div class="col-sm-6">
       <select name="filter" class="rna-filter form-control" title="Filter">
-        <option value="choose">Filter by...</option>
+        <option value="-1">Filter by...</option>
 	<option value="score">Score</option>
 	<option value="family">RNA Family</option>
       </select>
       <select name="filter-operator" class="filter-operator form-control" title="Filter operator">
-        <option value="choose">Choose operator...</option>
+        <option value="-1">Choose operator...</option>
 	<option value="equal">=</option>
 	<option value="greaterthan">></option>
         <option value="lessthan"><</option>
         <option value="lessthanequal"><=</option>
         <option value="greaterthanequal">>=</option>
+        <option value="notequalto"><></option>
       </select>
       <input type="text" class="filter-value form-control" title="Enter the selected filter's value" value="" placeholder="Enter the selected filter's value..." />
     </div>
