@@ -86,6 +86,14 @@ var RNAInteractions = {
             self.show_data( "" );
         });
 
+        // onchange for filter
+        $el_filter.on( 'change', function( e ) {
+            e.preventDefault();
+            var value = $( this )[ 0 ].value;
+            // if the selected filter is 'score', show the selectbox for operators
+            value === "score" ? $el_filter_operator.show() : $el_filter_operator.hide();
+        });
+
         // fetch records using filter's value
         $el_filter_val.on( 'keyup', function( e ) {
             e.preventDefault();
@@ -96,14 +104,14 @@ var RNAInteractions = {
             if ( !query ) {
                 self.show_data( "" );
             }
-
             if( e.which === 13 ) { // search on enter click
                 filter_type = $el_filter.find( ":selected" ).val();
                 filter_operator = $el_filter_operator.find( ":selected" ).val();
-                if ( filter_type === "-1" || filter_operator === "-1" || query === "" ) {
+                if ( filter_type === "-1" || query === "" ) {
                     return;
                 }
-                var url = "http://" + self.host + ":" + self.port + "/?filter_type=" + filter_type + "&filter_op=" + filter_operator + "&filter_value=" + query;
+                var url = "http://" + self.host + ":" + self.port + "/?filter_type=" + filter_type + 
+                    "&filter_op=" + filter_operator + "&filter_value=" + query;
                 self.show_data( "", url );
             }
         });

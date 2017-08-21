@@ -51,6 +51,10 @@ body {
     margin-top: 4%;
 }
 
+.filter-operator {
+    display: none;
+}
+
 .filter-value {
     display: inline-block;
     width: 40%;
