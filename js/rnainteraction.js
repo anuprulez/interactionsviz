@@ -155,9 +155,8 @@ var RNAInteractions = {
                        summary_result_type1 = {},
                        summary_result_type2 = {};
 
-                    _.each(summary_records, function( record ) {
-                        record = JSON.parse( record );
-                        summary.push( record );
+                    _.each(summary_records, function( item ) {
+                        summary.push( JSON.parse( item ) );
                     });
                     // summary fields - geneid (1 and 2) and type (1 and 2)
                     for ( var i = 0; i < summary.length; i++ ) {

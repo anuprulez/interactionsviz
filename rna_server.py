@@ -1,4 +1,5 @@
 import socket
+import os.path
 import sys
 import re
 import json
@@ -20,13 +21,16 @@ class RNAInteraction:
 
     @classmethod
     def convert_to_hdf5( self, file_path ):
-        connection = sqlite3.connect( file_path )
-        interactions_dataframe = pd.read_sql_query( "SELECT * FROM interactions;", connection )
-        connection.close()
-        interactions_dataframe.to_hdf( "interactions.hdf", 'interactions', mode="w", complib='blosc' )
-        hdfdata = pd.read_hdf( 'interactions.hdf', 'interactions' )
-        sorted_hdfdata = hdfdata.sort_values( by='score', ascending=False )
-        return sorted_hdfdata
+        file_name = "interactions.hdf"
+        # create hdf5 file from sqlite if it does not exist
+        if not os.path.isfile( file_name ):
+            connection = sqlite3.connect( file_path )
+            interactions_dataframe = pd.read_sql_query( "SELECT * FROM interactions;", connection )
+            connection.close()
+            interactions_dataframe.to_hdf( file_name, 'interactions', mode="w", complib='blosc' )
+
+        hdfdata = pd.read_hdf( file_name, 'interactions' )
+        return hdfdata.sort_values( by='score', ascending=False )
 
     @classmethod
     def read_from_file( self, file_path, how_many=1000 ):
@@ -52,10 +56,12 @@ class RNAInteraction:
         """ Filter data based on the filter, equality or inequality operator and filter's value """
         filter_type = params[ "filter_type" ][ 0 ]
         filter_operator = params[ "filter_op" ][ 0 ]
-        filter_value = float( params[ "filter_value" ][ 0 ] )
+        filter_value = params[ "filter_value" ][ 0 ]
 
         all_data = self.convert_to_hdf5( file_path )
         if filter_type == 'score':
+           # convert the filter value to float for comparison
+           filter_value = float( filter_value )
            if filter_operator == 'equal':
                all_data = all_data[ np.isclose( all_data[ 'score' ], filter_value ) ]
            elif filter_operator == 'greaterthan':
