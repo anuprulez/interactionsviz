@@ -194,8 +194,7 @@ var RNAInteractions = {
                     rna_records = [];
                 // create template for all pairs
                 _.each(records, function( record ) {
-                    record = JSON.parse( record );
-                    rna_records.push( record );
+                    rna_records.push( JSON.parse( record ) );
                 });
                 self.transcription_records = rna_records;
                 self.build_left_panel( rna_records );

@@ -4,6 +4,8 @@ import re
 import json
 import urlparse
 import sqlite3
+import pandas as pd
+import numpy as np
 
 
 class RNAInteraction:
@@ -17,69 +19,62 @@ class RNAInteraction:
         self.total_records = 10000
 
     @classmethod
-    def execute_sql_query( self, command, file_path ):
-        """ Execute sqlite query and fetch data """
+    def convert_to_hdf5( self, file_path ):
         connection = sqlite3.connect( file_path )
-        cursor = connection.cursor()
-        cursor.execute( command )
-        all_data = cursor.fetchall()
+        interactions_dataframe = pd.read_sql_query( "SELECT * FROM interactions;", connection )
         connection.close()
-        return all_data
+        interactions_dataframe.to_hdf( "interactions.hdf", 'interactions', mode="w", complib='blosc' )
+        hdfdata = pd.read_hdf( 'interactions.hdf', 'interactions' )
+        sorted_hdfdata = hdfdata.sort_values( by='score', ascending=False )
+        return sorted_hdfdata
 
     @classmethod
     def read_from_file( self, file_path, how_many=1000 ):
         """ Select data for the first load """
-        command = 'SELECT * FROM interactions ORDER BY ' + self.default_order_by + ' DESC'
-        all_data = self.execute_sql_query( command, file_path )
-        return all_data[ :how_many ]
+        return self.convert_to_hdf5( file_path )[ :how_many ]
         
     @classmethod
     def search_data( self, file_path, search_query, how_many=1000 ):
         """ Select data based on a search query """
-        command = 'SELECT * FROM interactions WHERE '  + self.searchable_fields[ 0 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' OR '  + self.searchable_fields[ 1 ] +  ' LIKE ' + '"%' + search_query + '%"' + ' ORDER BY ' + self.default_order_by + ' DESC'
-        all_data = self.execute_sql_query( command, file_path )
-        return all_data[ :how_many ]
+        all_data = self.convert_to_hdf5( file_path )
+        filtered_data = all_data[ all_data[ self.searchable_fields[ 0 ] ].str.contains( search_query ) | all_data[ self.searchable_fields[ 1 ] ].str.contains( search_query ) ]
+        return filtered_data[ :how_many ]
 
     @classmethod
     def make_summary( self, file_path, summary_record_ids ):
         """ Select data for making summary plots """
-        if len( summary_record_ids.split( ',' ) ) == 1:
-            summary_record_ids = "('" + summary_record_ids + "')"
-        else:
-            summary_record_ids = str( tuple( str( summary_record_ids ).split( ',' ) ) )
-        command = "SELECT * FROM interactions WHERE chimeraid IN "  +  summary_record_ids + " ORDER BY " + self.default_order_by + " DESC"
-        return self.execute_sql_query( command, file_path )
+	ids_pattern = '|'.join( summary_record_ids.split( ',' ) )
+        all_data = self.convert_to_hdf5( file_path )
+        return all_data[ all_data[ 'chimeraid' ].str.contains( ids_pattern ) ]
 
     @classmethod
     def filter_data( self, file_path, params, how_many=1000 ):
         """ Filter data based on the filter, equality or inequality operator and filter's value """
         filter_type = params[ "filter_type" ][ 0 ]
         filter_operator = params[ "filter_op" ][ 0 ]
-        filter_value = params[ "filter_value" ][ 0 ]
+        filter_value = float( params[ "filter_value" ][ 0 ] )
 
-        if ( filter_operator == 'equal' ):
-            filter_operator = '='
-        elif ( filter_operator == 'greaterthan' ):
-            filter_operator = '>'
-        elif ( filter_operator == 'lessthan' ):
-            filter_operator = '<'
-        elif ( filter_operator == 'lessthanequal' ):
-            filter_operator = '<='
-        elif( filter_operator == 'greaterthanequal' ):
-            filter_operator = '>='
-        else:
-            filter_operator = "<>"
-
+        all_data = self.convert_to_hdf5( file_path )
         if filter_type == 'score':
-           command = "SELECT * FROM interactions WHERE score "  + filter_operator + " " + filter_value  + " ORDER BY " + self.default_order_by + " DESC"
-        elif filter_type == 'family':
-           if filter_operator == '<>':
-               command = "SELECT * FROM interactions WHERE type1 NOT LIKE " + '"%' + filter_value + '%"' + ' AND'  + ' type2' +  ' NOT LIKE ' + '"%' + filter_value + '%"' + " ORDER BY " + self.default_order_by + " DESC"
+           if filter_operator == 'equal':
+               all_data = all_data[ np.isclose( all_data[ 'score' ], filter_value ) ]
+           elif filter_operator == 'greaterthan':
+               all_data = all_data[ all_data[ 'score' ] > filter_value ]
+           elif filter_operator == 'lessthan':
+               all_data = all_data[ all_data[ 'score' ] < filter_value ]
+           elif filter_operator == 'lessthanequal':
+               all_data = all_data[ all_data[ 'score' ] <= filter_value ]
+           elif filter_operator == 'greaterthanequal':
+               all_data = all_data[ all_data[ 'score' ] >= filter_value ]
            else:
-               command = "SELECT * FROM interactions WHERE type1 LIKE " + '"%' + filter_value + '%"' + ' OR'  + ' type2' +  ' LIKE ' + '"%' + filter_value + '%"' + " ORDER BY " + self.default_order_by + " DESC"
-        all_data = self.execute_sql_query( command, file_path )
-        return all_data[ :how_many ]
+               all_data = all_data[ all_data[ 'score' ] != filter_value ]
 
+        elif filter_type == 'family':
+           if filter_operator == 'notequalto':
+               all_data = all_data[ ~all_data[ 'type1' ].str.contains( filter_value ) & ~all_data[ 'type2' ].str.contains( filter_value ) ]
+           else:
+               all_data = all_data[ all_data[ 'type1' ].str.contains( filter_value ) | all_data[ 'type2' ].str.contains( filter_value ) ]
+        return all_data[ :how_many ]
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -119,13 +114,13 @@ if __name__ == "__main__":
             if( "summary_ids" in query ):
                 summary_ids = params[ 'summary_ids' ][ 0 ]
                 summary = data.make_summary( file_name, summary_ids )
-                for item in summary:
-                    content += json.dumps( item ) + '\n'
+                for index, row in summary.iterrows():
+                    content += row.to_json( orient='records' ) + '\n'
             elif( "filter" in query ):
                 filtered_data = data.filter_data( file_name, params )
-                if( filtered_data ):
-                    for item in filtered_data:
-                        content += json.dumps( item ) + '\n'
+                if not filtered_data.empty:
+                    for index, row in filtered_data.iterrows():
+                        content += row.to_json( orient='records' ) + '\n'
                 else:
                     content = ""
             elif( "?" in query ):
@@ -135,9 +130,9 @@ if __name__ == "__main__":
                     results = data.search_data( file_name, search_by )
                 else:
                     results = data.read_from_file( file_name )
-                if( results ):
-                    for item in results:
-                        content += json.dumps( item ) + '\n'
+                if not results.empty:
+                    for index, row in results.iterrows():
+                        content += row.to_json( orient='records' ) + '\n'
                 else:
                     content = ""
             else:
