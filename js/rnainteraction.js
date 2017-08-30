@@ -60,7 +60,8 @@ var RNAInteractions = {
             $el_sort = $( '.rna-sort' ),
             $el_filter = $( '.rna-filter' ),
             $el_filter_operator = $( '.filter-operator' ),
-            $el_filter_val = $( '.filter-value' );
+            $el_filter_val = $( '.filter-value' ),
+            $el_summary = $( '.rna-summary' );
 
         // search query event
         $el_search_gene.on( 'keyup', function( e ) {
@@ -115,29 +116,12 @@ var RNAInteractions = {
                 self.show_data( "", url );
             }
         });
-    },
-
-    /** Register client-side events */
-    register_events: function() {
-        var self = this,
-            $el_rna_pair = $( '.rna-pair' ),
-            $el_summary = $( '.rna-summary' );
-
-        // highlight the transaction pair
-        $el_rna_pair.on( 'mouseenter', function() {
-            $( this ).addClass( 'pair-mouseenter' );
-        });
-
-        // remove the highlighted background on focus remove
-        $el_rna_pair.on( 'mouseleave', function() {
-            $( this ).removeClass( 'pair-mouseenter' );
-        });
 
         // click for checkboxes
         $el_summary.on( 'click', function( e ) {
             e.preventDefault();
             var checked_ids = "",
-                checkboxes = $el_rna_pair.find( 'input[type="checkbox"]' ),
+                checkboxes = $( '.rna-pair' ).find( 'input[type="checkbox"]' ),
                 url = "";
             _.each( checkboxes, function( item ) {
                 if( item.checked ) {
@@ -173,6 +157,21 @@ var RNAInteractions = {
                     self.plot_summary_charts( summary_result_type2, "rna-type2", 'RNA gene 2 family distribution' );                
                 });
             }
+        });
+    },
+
+    /** Register client-side events */
+    register_events: function() {
+        var self = this,
+            $el_rna_pair = $( '.rna-pair' );
+        // highlight the transaction pair
+        $el_rna_pair.on( 'mouseenter', function() {
+            $( this ).addClass( 'pair-mouseenter' );
+        });
+
+        // remove the highlighted background on focus remove
+        $el_rna_pair.on( 'mouseleave', function() {
+            $( this ).removeClass( 'pair-mouseenter' );
         });
     },
 
