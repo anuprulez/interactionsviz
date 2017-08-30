@@ -16,6 +16,7 @@ class RNAInteraction:
     def __init__( self ):
         """ Init method. """
         self.default_order_by = 'score'
+        self.default_ascending = False
         self.searchable_fields = [ 'geneid1', 'geneid2' ]
         self.total_records = 10000
 
@@ -30,7 +31,7 @@ class RNAInteraction:
             interactions_dataframe.to_hdf( file_name, 'interactions', mode="w", complib='blosc' )
 
         hdfdata = pd.read_hdf( file_name, 'interactions' )
-        return hdfdata.sort_values( by='score', ascending=False )
+        return hdfdata.sort_values( by=self.default_order_by, ascending=self.default_ascending )
 
     @classmethod
     def read_from_file( self, file_path, how_many=1000 ):
@@ -57,30 +58,27 @@ class RNAInteraction:
         filter_type = params[ "filter_type" ][ 0 ]
         filter_operator = params[ "filter_op" ][ 0 ]
         filter_value = params[ "filter_value" ][ 0 ]
-
         all_data = self.convert_to_hdf5( file_path )
         if filter_type == 'score':
-           # convert the filter value to float for comparison
-           filter_value = float( filter_value )
-           if filter_operator == 'equal':
-               all_data = all_data[ np.isclose( all_data[ 'score' ], filter_value ) ]
-           elif filter_operator == 'greaterthan':
-               all_data = all_data[ all_data[ 'score' ] > filter_value ]
-           elif filter_operator == 'lessthan':
-               all_data = all_data[ all_data[ 'score' ] < filter_value ]
-           elif filter_operator == 'lessthanequal':
-               all_data = all_data[ all_data[ 'score' ] <= filter_value ]
-           elif filter_operator == 'greaterthanequal':
-               all_data = all_data[ all_data[ 'score' ] >= filter_value ]
-           else:
-               all_data = all_data[ all_data[ 'score' ] != filter_value ]
-
+            # convert the filter value to float for comparison
+            filter_value = float( filter_value )
+            if filter_operator == 'equal':
+                all_data = all_data[ np.isclose( all_data[ 'score' ], filter_value ) ]
+            elif filter_operator == 'greaterthan':
+                all_data = all_data[ all_data[ 'score' ] > filter_value ]
+            elif filter_operator == 'lessthan':
+                all_data = all_data[ all_data[ 'score' ] < filter_value ]
+            elif filter_operator == 'lessthanequal':
+                all_data = all_data[ all_data[ 'score' ] <= filter_value ]
+            elif filter_operator == 'greaterthanequal':
+                all_data = all_data[ all_data[ 'score' ] >= filter_value ]
+            else:
+                all_data = all_data[ all_data[ 'score' ] != filter_value ]
         elif filter_type == 'family':
-           if filter_operator == 'notequalto':
-               all_data = all_data[ ~all_data[ 'type1' ].str.contains( filter_value ) & ~all_data[ 'type2' ].str.contains( filter_value ) ]
-           else:
-               all_data = all_data[ all_data[ 'type1' ].str.contains( filter_value ) | all_data[ 'type2' ].str.contains( filter_value ) ]
+            all_data = all_data[ all_data[ 'type1' ].str.contains( filter_value ) | all_data[ 'type2' ].str.contains( filter_value ) ]
+
         return all_data[ :how_many ]
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
