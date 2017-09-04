@@ -19,29 +19,89 @@ class RNAInteraction:
         self.default_ascending = False
         self.searchable_fields = [ 'geneid1', 'geneid2' ]
         self.total_records = 10000
+        self.number_samples = 10
+        self.sample_prefix = 'sample'
+        self.sqlite_table_name = 'interactions'
+        self.hdf_file_ext = '.hdf'
 
     @classmethod
-    def convert_to_hdf5( self, file_path ):
-        file_name = "interactions.hdf"
-        # create hdf5 file from sqlite if it does not exist
-        if not os.path.isfile( file_name ):
-            connection = sqlite3.connect( file_path )
-            interactions_dataframe = pd.read_sql_query( "SELECT * FROM interactions;", connection )
-            connection.close()
-            interactions_dataframe.to_hdf( file_name, 'interactions', mode="w", complib='blosc' )
+    def get_sample_names( self, file_name ):
+        """ Get all the file names of the samples """
+        self.make_samples( file_name )
+        file_names = [ file.split( '.' )[ 0 ] for file in os.listdir( '.' ) if file.startswith( self.sample_prefix ) ]
+        return sorted( file_names, key=str.lower)
 
-        hdfdata = pd.read_hdf( file_name, 'interactions' )
+    @classmethod
+    def make_samples( self, file_path ):
+        """ Take out records for multiple samples """
+        samples = dict()
+        connection = sqlite3.connect( file_path )
+        query = "SELECT * FROM " + self.sqlite_table_name + ";"
+        interactions_dataframe = pd.read_sql_query( query, connection )
+        size_each_file = self.total_records / self.number_samples
+        for sample_number in xrange( 0, self.number_samples ):
+            fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
+            file_name = self.sample_prefix + str( sample_number + 1 ) + self.hdf_file_ext
+            if not os.path.isfile( file_name ):
+                fraction_data.to_hdf( file_name, self.sample_prefix + str( sample_number + 1 ), mode="w", complib='blosc', index=None )
+        connection.close()
+ 
+    @classmethod
+    def read_samples( self, sample_ids ):
+        sample_ids = sample_ids.split( ',' )
+        samples = dict()
+        for item in sample_ids:
+            samples[ item ] = list()
+            sample_data = pd.read_hdf( item + self.hdf_file_ext, item, index=None )
+            samples[ item ] = sample_data
+        return samples
+
+    @classmethod
+    def find_common( self, samples, sample_ids ):
+        """ Create a matrix of common interactions across multiple samples """
+        # find the smallest sample from all samples        
+        sample_names = sample_ids.split( "," )
+        size_all_samples = len( sample_names )
+        common_interactions = np.empty( ( size_all_samples, size_all_samples ) )
+        common_interactions[ : ] = np.NAN
+        for index_x, sample_x in enumerate( samples ):
+            for index_y, sample_y in enumerate( samples ):
+                if index_x == index_y:
+                    common_interactions[ index_x ][ index_y ] = len( samples[ sample_names[ index_x ] ] )
+                else:
+                    if( np.isnan( common_interactions[ index_x ][ index_y ] ) ):
+                        interactions_ctr = 0
+                        sample_a = samples[ sample_names[ index_x ] ]
+                        sample_b = samples[ sample_names[ index_y ] ]
+                        for item_x in xrange( 0, len( sample_a ) ):
+                            if( ( item_x % 100 ) == 0 ):
+                                print "%d records checked" % item_x
+                            row_x = sample_a[ item_x: item_x + 1 ]
+                            for item_y in xrange( 0, len( sample_b ) ):
+                                row_y = sample_b[ item_y: item_y + 1 ]
+                                if( str( row_x[ 'txid1' ].values[ 0 ] ) == str( row_y[ 'txid1' ].values[ 0 ] ) \
+                                    and str( row_x[ 'txid2' ].values[ 0 ]) == str( row_y[ 'txid2' ].values[ 0 ] ) ):
+                                    interactions_ctr = interactions_ctr + 1
+                                    break
+                        common_interactions[ index_x ][ index_y ] = interactions_ctr
+                        common_interactions[ index_y ][ index_x ] = interactions_ctr
+        common_interactions = np.reshape( common_interactions, ( size_all_samples ** 2, 1) )
+        return common_interactions
+    
+    @classmethod
+    def read_hdf_sample( self, file_name ):
+        hdfdata = pd.read_hdf( file_name + self.hdf_file_ext, file_name )
         return hdfdata.sort_values( by=self.default_order_by, ascending=self.default_ascending )
 
     @classmethod
     def read_from_file( self, file_path, how_many=1000 ):
         """ Select data for the first load """
-        return self.convert_to_hdf5( file_path )[ :how_many ]
+        return self.read_hdf_sample( file_path )[ :how_many ]
         
     @classmethod
     def search_data( self, file_path, search_query, how_many=1000 ):
         """ Select data based on a search query """
-        all_data = self.convert_to_hdf5( file_path )
+        all_data = self.read_hdf_sample( file_path )
         filtered_data = all_data[ all_data[ self.searchable_fields[ 0 ] ].str.contains( search_query ) | all_data[ self.searchable_fields[ 1 ] ].str.contains( search_query ) ]
         return filtered_data[ :how_many ]
 
@@ -49,7 +109,7 @@ class RNAInteraction:
     def make_summary( self, file_path, summary_record_ids ):
         """ Select data for making summary plots """
 	ids_pattern = '|'.join( summary_record_ids.split( ',' ) )
-        all_data = self.convert_to_hdf5( file_path )
+        all_data = self.read_hdf_sample( file_path )
         return all_data[ all_data[ 'chimeraid' ].str.contains( ids_pattern ) ]
 
     @classmethod
@@ -58,7 +118,7 @@ class RNAInteraction:
         filter_type = params[ "filter_type" ][ 0 ]
         filter_operator = params[ "filter_op" ][ 0 ]
         filter_value = params[ "filter_value" ][ 0 ]
-        all_data = self.convert_to_hdf5( file_path )
+        all_data = self.read_hdf_sample( file_path )
         if filter_type == 'score':
             # convert the filter value to float for comparison
             filter_value = float( filter_value )
@@ -115,13 +175,25 @@ if __name__ == "__main__":
             content = ""
             parsed_query = urlparse.urlparse( query )
             params = urlparse.parse_qs( parsed_query.query )
-            if( "summary_ids" in query ):
+            if( "sample_ids" in query ):
+                sample_ids = params[ 'sample_ids' ][ 0 ]
+                samples = data.read_samples( sample_ids )
+                matrix = data.find_common( samples, sample_ids )
+                for item in matrix:
+                    content += str( item[ 0 ] ) + '\n'
+            elif( "multisamples" in query ):
+                file_names = RNAInteraction.get_sample_names( file_name )
+                for name in file_names:
+                    content += name + '\n'
+            elif( "summary_ids" in query ):
+                sample_name = params[ 'sample_name' ][ 0 ]
                 summary_ids = params[ 'summary_ids' ][ 0 ]
-                summary = data.make_summary( file_name, summary_ids )
+                summary = data.make_summary( sample_name, summary_ids )
                 for index, row in summary.iterrows():
                     content += row.to_json( orient='records' ) + '\n'
             elif( "filter" in query ):
-                filtered_data = data.filter_data( file_name, params )
+                sample_name = params[ 'sample_name' ][ 0 ]
+                filtered_data = data.filter_data( sample_name, params )
                 if not filtered_data.empty:
                     for index, row in filtered_data.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
@@ -129,11 +201,12 @@ if __name__ == "__main__":
                     content = ""
             elif( "?" in query ):
                 search_by = ""
+                sample_name = params[ 'sample_name' ][ 0 ]
                 if 'search' in params:
                     search_by = params[ 'search' ][ 0 ]
-                    results = data.search_data( file_name, search_by )
+                    results = data.search_data( sample_name, search_by )
                 else:
-                    results = data.read_from_file( file_name )
+                    results = data.read_from_file( sample_name )
                 if not results.empty:
                     for index, row in results.iterrows():
                         content += row.to_json( orient='records' ) + '\n'

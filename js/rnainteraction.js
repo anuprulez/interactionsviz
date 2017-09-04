@@ -1,10 +1,118 @@
-var RNAInteractions = {
+// For all samples. Load the intial view
+var MultiSamples = {
+
+    host: window.location.hostname,
+    port: window.location.port,
+
+    // make list of all samples
+    build_samples_list: function( samples ) {
+        var template = "",
+            self = this,
+            $el_samples = $( '.sample-ids' );
+        _.each( samples, function( sample ) {
+            sample = sample.trim();
+            template = template + '<div><input class="file-sample-checkbox" type="checkbox" id="'+ sample +'" value="" title="Check one or more and click on summary." />' +
+                       '<span class="file-sample" id="'+ sample +'" title="Click to see all interactions for this sample">' + sample  + '</span></div>';
+        });
+        $el_samples.html( template );
+        $( '.multi-samples' ).show();
+        $( '.one-sample' ).hide();
+    },
+
+    // pull all the samples
+    get_samples: function() {
+        var self = this,
+            url = "http://" + self.host + ":" + self.port + "/?multisamples=true";
+        $.get( url, function( samples ) {
+            samples = samples.split( "\n" );
+            self.build_samples_list( samples );
+            self.register_events();
+        });
+    },
+
+    // show summary for selected samples
+    // and plot a heatmap
+    make_samples_summary: function( checked_ids ) {
+        var self = this;
+        if( checked_ids && checked_ids.length > 0 ) {
+            var ids = checked_ids.split( "," );
+            if ( ids.length > 0) {
+                $( '#samples-plot' ).hide();
+                $( '.matrix-loading' ).show();
+                $( '.samples-overlay' ).show();
+                var url = "http://" + self.host + ":" + self.port + "/?sample_ids=" + checked_ids;
+                $.get( url, function( samples ) {
+                    samples = samples.split( "\n" ).map( Number );
+                    var matrix = [];
+                    for( var ctr = 0; ctr < samples.length; ctr = ctr + ids.length ) {
+                        samples_row = samples.slice( ctr, ctr + ids.length );
+                        matrix.push( samples_row );
+                    }
+                    var data = [
+                      {
+                        z: matrix,
+                        x: ids,
+                        y: ids,
+                        type: 'heatmap'   
+                      }
+                    ];
+                    var layout = {
+                      height: 500,
+                      width: 700,
+                      title: 'Samples match matrix'
+                    };
+                    Plotly.newPlot( 'samples-plot', data, layout );
+                    $( '#samples-plot' ).show();
+                    $( '.samples-overlay' ).hide();
+                    $( '.matrix-loading' ).hide();
+                });
+            }
+        }
+    },
+
+    // register events for summary and samples
+    register_events: function() {
+        var self = this, 
+            $el_summary = $( '.sample-summary' ),
+            $el_sample = $( '.file-sample' );
+
+        // make summary for selected samples
+        $el_summary.on( 'click', function( e ) {
+            e.preventDefault();
+            e.stopPropagation();
+            var checked_ids = "",
+                checkboxes = $( '.file-sample-checkbox' ),
+                url = "";
+            _.each( checkboxes, function( item ) {
+                if( item.checked ) {
+                    checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
+                }
+            });
+            self.make_samples_summary( checked_ids.trim() );
+        });
+
+        // event for showing interactions for the selected sample
+        $el_sample.on( 'click', function( e ) {
+            e.preventDefault();
+            $( '.multi-samples' ).hide();
+            $( '.one-sample' ).show();
+            SampleInteractions.register_page_events();
+            SampleInteractions.sample_name = $( this )[ 0 ].id;
+            SampleInteractions.show_data( "" );
+        });
+    }
+};
+
+// For the selected sample. Show all interactions
+// for the selected one with search, sort and filtering features
+var SampleInteractions = {
 
     transcription_records: [],
     min_query_length: 3,
     host: window.location.hostname,
     port: window.location.port,
     search_text: "",
+    sample_name: "",
     
     /** Build fancy scroll for the interactions */
     build_fancy_scroll: function() {
@@ -61,7 +169,8 @@ var RNAInteractions = {
             $el_filter = $( '.rna-filter' ),
             $el_filter_operator = $( '.filter-operator' ),
             $el_filter_val = $( '.filter-value' ),
-            $el_summary = $( '.rna-summary' );
+            $el_summary = $( '.rna-summary' ),
+            $el_back = $( '.back-samples' );
 
         // search query event
         $el_search_gene.on( 'keyup', function( e ) {
@@ -111,7 +220,7 @@ var RNAInteractions = {
                 if ( filter_type === "-1" || query === "" ) {
                     return;
                 }
-                var url = "http://" + self.host + ":" + self.port + "/?filter_type=" + filter_type + 
+                var url = "http://" + self.host + ":" + self.port + "/?sample_name="+ SampleInteractions.sample_name +"&filter_type=" + filter_type + 
                     "&filter_op=" + filter_operator + "&filter_value=" + query;
                 self.show_data( "", url );
             }
@@ -129,7 +238,7 @@ var RNAInteractions = {
                 }
             });
             if( checked_ids !== "" ) {
-                url = "http://" + self.host + ":" + self.port + "/?summary_ids=" + checked_ids;
+                url = "http://" + self.host + ":" + self.port + "/?sample_name="+ SampleInteractions.sample_name +"&summary_ids=" + checked_ids;
                 // fetch data for summary interactions
                 $.get( url, function( result ) {
                     var summary = [],
@@ -158,6 +267,12 @@ var RNAInteractions = {
                 });
             }
         });
+
+        // back to all samples view
+        $el_back.on( 'click', function( e ) {
+            e.preventDefault();
+            window.location.reload();
+        });
     },
 
     /** Register client-side events */
@@ -178,11 +293,19 @@ var RNAInteractions = {
     /** Show data in the left panel */
     show_data: function( search_by, url_text ) {
         var self = this,
-            url = url_text ? url_text : "http://" + self.host + ":" + self.port + "/?search=" + search_by,
+            url = url_text ? url_text : "http://" + self.host + ":" + self.port +
+                "/?sample_name="+ SampleInteractions.sample_name +"&search=" + search_by,
             $el_loading = $( ".loading" ),
             $el_transcriptions_ids_parent = $( '.rna-transcriptions-container' );
         
         $( '.transcriptions-ids' ).remove();
+
+        // clear old charts
+        $( '#rna-gene1' ).empty();
+        $( '#rna-gene2' ).empty();
+        $( '#rna-type1' ).empty();
+        $( '#rna-type2' ).empty();
+
         $el_loading.show();
         // pull all the data
 	$.get( url, function( result ) {
@@ -206,11 +329,8 @@ var RNAInteractions = {
     }
 };
 
-
 $(document).ready(function() {
-    RNAInteractions.register_page_events();
-    // load the pairs of interaction ids
-    RNAInteractions.show_data( "" );
+    MultiSamples.get_samples();
 });
 
 

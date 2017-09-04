@@ -4,6 +4,10 @@ body {
     font-size: 9pt;
 }
 
+.one-sample {
+    display: none;
+}
+
 .heading {
     margin-left: 5.5%;
 }
@@ -17,20 +21,24 @@ body {
     margin-top: 8%;
 }
 
-.rna-transcriptions-container {
+.samples-container, .rna-transcriptions-container {
     padding-left: 0;
     height: 100%;
     border-right: 1px solid black;
 }
 
-.rna-results {
+.samples, .rna-results {
     height: 80%;
     margin-top: 1%;
     border-top: 1px solid black;
     border-bottom: 1px solid black;
 }
 
-.transcriptions-ids {
+.col-sm-3, .col-sm-5, .col-sm-12 {
+    padding-left: 0px;
+}
+
+.sample-ids, .transcriptions-ids {
     overflow: auto;
 }
 
@@ -51,8 +59,16 @@ body {
     margin-top: 4%;
 }
 
-.filter-operator {
+.file-sample {
+    cursor: pointer;
+}
+
+.filter-operator, .matrix-loading {
     display: none;
+}
+
+.matrix-loading {
+    padding: 1% 0 0 35%;
 }
 
 .filter-value {
@@ -90,6 +106,17 @@ body {
     overflow: auto;
     height: 50%;
     width: 100%;
+}
+
+.samples-overlay {
+    display: none;
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.2);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%; 
+    z-index: 1;
 }
 
 
