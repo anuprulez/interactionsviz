@@ -40,7 +40,7 @@ class RNAInteraction:
         interactions_dataframe = pd.read_sql_query( query, connection )
         size_each_file = self.total_records / self.number_samples
         for sample_number in xrange( 0, self.number_samples ):
-            fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
+            fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file - 800 ]
             file_name = self.sample_prefix + str( sample_number + 1 ) + self.hdf_file_ext
             if not os.path.isfile( file_name ):
                 fraction_data.to_hdf( file_name, self.sample_prefix + str( sample_number + 1 ), mode="w", complib='blosc', index=None )
