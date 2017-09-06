@@ -4,7 +4,6 @@ import sys
 import re
 import json
 import urlparse
-import sqlite3
 import pandas as pd
 import numpy as np
 
@@ -34,20 +33,17 @@ class RNAInteraction:
     @classmethod
     def make_samples( self, file_path ):
         """ Take out records for multiple samples """
-        samples = dict()
-        connection = sqlite3.connect( file_path )
-        query = "SELECT * FROM " + self.sqlite_table_name + ";"
-        interactions_dataframe = pd.read_sql_query( query, connection )
+        interactions_dataframe = pd.read_table( file_path, sep='\t', header=0)
         size_each_file = self.total_records / self.number_samples
         for sample_number in xrange( 0, self.number_samples ):
             fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file - 800 ]
             file_name = self.sample_prefix + str( sample_number + 1 ) + self.hdf_file_ext
             if not os.path.isfile( file_name ):
                 fraction_data.to_hdf( file_name, self.sample_prefix + str( sample_number + 1 ), mode="w", complib='blosc', index=None )
-        connection.close()
  
     @classmethod
     def read_samples( self, sample_ids ):
+        """ Read the selected HDF samples """
         sample_ids = sample_ids.split( ',' )
         samples = dict()
         for item in sample_ids:
@@ -62,13 +58,17 @@ class RNAInteraction:
         # find the smallest sample from all samples        
         sample_names = sample_ids.split( "," )
         size_all_samples = len( sample_names )
+        # create n x n matrix with NAN values
         common_interactions = np.empty( ( size_all_samples, size_all_samples ) )
         common_interactions[ : ] = np.NAN
+        # find the number of common interactions for each pair of selected samples
         for index_x, sample_x in enumerate( samples ):
             for index_y, sample_y in enumerate( samples ):
                 if index_x == index_y:
+                    # fill the diagonal of the matrix with the size of sample being compared
                     common_interactions[ index_x ][ index_y ] = len( samples[ sample_names[ index_x ] ] )
                 else:
+                    # fill only one of half of the matrix as the resulting matrix would be symmetric
                     if( np.isnan( common_interactions[ index_x ][ index_y ] ) ):
                         interactions_ctr = 0
                         sample_a = samples[ sample_names[ index_x ] ]
@@ -79,12 +79,15 @@ class RNAInteraction:
                             row_x = sample_a[ item_x: item_x + 1 ]
                             for item_y in xrange( 0, len( sample_b ) ):
                                 row_y = sample_b[ item_y: item_y + 1 ]
+                                # common interactions are checked using the 'txid1' and 'txid2' fields
                                 if( str( row_x[ 'txid1' ].values[ 0 ] ) == str( row_y[ 'txid1' ].values[ 0 ] ) \
                                     and str( row_x[ 'txid2' ].values[ 0 ]) == str( row_y[ 'txid2' ].values[ 0 ] ) ):
                                     interactions_ctr = interactions_ctr + 1
                                     break
+                        # update the count of common interactions as symmetric values
                         common_interactions[ index_x ][ index_y ] = interactions_ctr
                         common_interactions[ index_y ][ index_x ] = interactions_ctr
+        # reshape the matrix as an array to be passed as JSON
         common_interactions = np.reshape( common_interactions, ( size_all_samples ** 2, 1) )
         return common_interactions
     
