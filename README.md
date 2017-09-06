@@ -9,14 +9,14 @@ How to use:
 2. Move to $ cd interactionsviz
 
 3. Run python server: $ python rna_server.py data_file_name_or_path port_number
-   example: $ python rna_server.py interactions.sqlite 8001
+   example: $ python rna_server.py interactions.tsv 8001
 
 4. Open browser and browse to: http://your_domain_name:port/index.html
    
    example: My system's root is: anupkumar@anupkumar-pc
    So the url for me is: http://anupkumar-pc:8001/index.html
 
-5. The left-side panel lists all the samples (as HDF files) created using the sqlite file.
+5. The left-side panel lists all the samples (as HDF files) created using the .tsv file.
 
 6. Check one or more samples and click on "summary" (on the bottom left). A heatmap plot is plotted showing all the common interactions among all the selected samples. Plotting of this heatmap takes time depending on the number of samples checked.
 
