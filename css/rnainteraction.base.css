@@ -82,6 +82,10 @@ body {
     padding: 1% 0 0 35%;
 }
 
+.matrix-loading img {
+    margin: 2% 0 0 15%;
+}
+
 .filter-value {
     display: inline-block;
     width: 40%;
@@ -106,6 +110,7 @@ body {
     background-color: #2c3143;
     color: white;
     padding-left: 0.5%;
+    cursor: pointer;
 }
 
 .rna-footer {

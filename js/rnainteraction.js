@@ -299,13 +299,11 @@ var SampleInteractions = {
             $el_transcriptions_ids_parent = $( '.rna-transcriptions-container' );
         
         $( '.transcriptions-ids' ).remove();
-
         // clear old charts
         $( '#rna-gene1' ).empty();
         $( '#rna-gene2' ).empty();
         $( '#rna-type1' ).empty();
         $( '#rna-type2' ).empty();
-
         $el_loading.show();
         // pull all the data
 	$.get( url, function( result ) {
@@ -331,6 +329,11 @@ var SampleInteractions = {
 
 $(document).ready(function() {
     MultiSamples.get_samples();
+    // reload the app on header click
+    $( '.rna-header' ).on('click', function( e ) {
+        e.preventDefault();
+        window.location.reload();
+    });
 });
 
 
