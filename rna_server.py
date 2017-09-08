@@ -61,6 +61,8 @@ class RNAInteraction:
         # create n x n matrix with NAN values
         common_interactions = np.empty( ( size_all_samples, size_all_samples ) )
         common_interactions[ : ] = np.NAN
+        total_long_iterations = ( size_all_samples * size_all_samples ) - size_all_samples
+        counter = 0
         # find the number of common interactions for each pair of selected samples
         for index_x, sample_x in enumerate( samples ):
             for index_y, sample_y in enumerate( samples ):
@@ -69,13 +71,12 @@ class RNAInteraction:
                     common_interactions[ index_x ][ index_y ] = len( samples[ sample_names[ index_x ] ] )
                 else:
                     # fill only one of half of the matrix as the resulting matrix would be symmetric
-                    if( np.isnan( common_interactions[ index_x ][ index_y ] ) ):
+                    if( np.isnan( common_interactions[ index_x ][ index_y ] ) and np.isnan( common_interactions[ index_y ][ index_x ] ) ):
+                        counter += 1
                         interactions_ctr = 0
                         sample_a = samples[ sample_names[ index_x ] ]
                         sample_b = samples[ sample_names[ index_y ] ]
                         for item_x in xrange( 0, len( sample_a ) ):
-                            if( ( item_x % 100 ) == 0 ):
-                                print "%d records checked" % item_x
                             row_x = sample_a[ item_x: item_x + 1 ]
                             for item_y in xrange( 0, len( sample_b ) ):
                                 row_y = sample_b[ item_y: item_y + 1 ]
@@ -87,6 +88,7 @@ class RNAInteraction:
                         # update the count of common interactions as symmetric values
                         common_interactions[ index_x ][ index_y ] = interactions_ctr
                         common_interactions[ index_y ][ index_x ] = interactions_ctr
+                        print '%s percent complete' % str( round( ( ( 2 / float( total_long_iterations ) ) * counter ) * 100 ) )
         # reshape the matrix as an array to be passed as JSON
         common_interactions = np.reshape( common_interactions, ( size_all_samples ** 2, 1) )
         return common_interactions
