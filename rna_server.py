@@ -36,7 +36,7 @@ class RNAInteraction:
         interactions_dataframe = pd.read_table( file_path, sep='\t', header=0)
         size_each_file = self.total_records / self.number_samples
         for sample_number in xrange( 0, self.number_samples ):
-            fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file - 800 ]
+            fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
             file_name = self.sample_prefix + str( sample_number + 1 ) + self.hdf_file_ext
             if not os.path.isfile( file_name ):
                 fraction_data.to_hdf( file_name, self.sample_prefix + str( sample_number + 1 ), mode="w", complib='blosc', index=None )
@@ -76,15 +76,16 @@ class RNAInteraction:
                         interactions_ctr = 0
                         sample_a = samples[ sample_names[ index_x ] ]
                         sample_b = samples[ sample_names[ index_y ] ]
+                        sample_a_field_dict = dict()
                         for item_x in xrange( 0, len( sample_a ) ):
-                            row_x = sample_a[ item_x: item_x + 1 ]
-                            for item_y in xrange( 0, len( sample_b ) ):
-                                row_y = sample_b[ item_y: item_y + 1 ]
-                                # common interactions are checked using the 'txid1' and 'txid2' fields
-                                if( str( row_x[ 'txid1' ].values[ 0 ] ) == str( row_y[ 'txid1' ].values[ 0 ] ) \
-                                    and str( row_x[ 'txid2' ].values[ 0 ]) == str( row_y[ 'txid2' ].values[ 0 ] ) ):
-                                    interactions_ctr = interactions_ctr + 1
-                                    break
+                            row_x = sample_a[ item_x: item_x + 1 ] 
+                            sample_a_field_dict[ (row_x[ 'txid1' ].values[ 0 ], row_x[ 'txid2' ].values[ 0 ]) ] = \
+                                ( row_x[ 'txid1' ].values[ 0 ], row_x[ 'txid2' ].values[ 0 ] )
+                        for item_y in xrange( 0, len( sample_b ) ):
+                            row_y = sample_b[ item_y: item_y + 1 ]
+                            # common interactions are checked using the 'txid1' and 'txid2' fields
+                            if ( row_y[ 'txid1' ].values[ 0 ], row_y[ 'txid2' ].values[ 0 ] ) in sample_a_field_dict:
+                                interactions_ctr = interactions_ctr + 1
                         # update the count of common interactions as symmetric values
                         common_interactions[ index_x ][ index_y ] = interactions_ctr
                         common_interactions[ index_y ][ index_x ] = interactions_ctr

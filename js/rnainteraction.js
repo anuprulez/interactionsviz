@@ -74,7 +74,8 @@ var MultiSamples = {
     register_events: function() {
         var self = this, 
             $el_summary = $( '.sample-summary' ),
-            $el_sample = $( '.file-sample' );
+            $el_sample = $( '.file-sample' ),
+            $el_check_all = $( '.check-all-samples' );
 
         // make summary for selected samples
         $el_summary.on( 'click', function( e ) {
@@ -99,6 +100,15 @@ var MultiSamples = {
             SampleInteractions.register_page_events();
             SampleInteractions.sample_name = $( this )[ 0 ].id;
             SampleInteractions.show_data( "" );
+        });
+
+        // event for checking/ unchecking all samples
+        $el_check_all.on( 'click', function( e ) {
+            var checkall_status = $( this )[ 0 ].checked,
+                all_samples_checkboxes = $( '.file-sample-checkbox' );
+            _.each( all_samples_checkboxes, function( item ) {
+                item.checked = checkall_status ? true : false;
+            });
         });
     }
 };
@@ -170,7 +180,8 @@ var SampleInteractions = {
             $el_filter_operator = $( '.filter-operator' ),
             $el_filter_val = $( '.filter-value' ),
             $el_summary = $( '.rna-summary' ),
-            $el_back = $( '.back-samples' );
+            $el_back = $( '.back-samples' ),
+            $el_check_all = $( '.check-all-interactions' );
 
         // search query event
         $el_search_gene.on( 'keyup', function( e ) {
@@ -328,7 +339,12 @@ var SampleInteractions = {
 };
 
 $(document).ready(function() {
+    // reset the select all checkbox
+    $( '.check-all-samples' )[ 0 ].checked = false;
+
+    // Fetch all samples
     MultiSamples.get_samples();
+
     // reload the app on header click
     $( '.rna-header' ).on('click', function( e ) {
         e.preventDefault();
