@@ -4,6 +4,10 @@ body {
     font-size: 9pt;
 }
 
+.col-sm-3, .col-sm-5, .col-sm-12 {
+    padding-left: 0px;
+}
+
 .one-sample {
     display: none;
 }
@@ -40,10 +44,6 @@ body {
     border-bottom: 1px solid black;
 }
 
-.col-sm-3, .col-sm-5, .col-sm-12 {
-    padding-left: 0px;
-}
-
 .sample-ids, .transcriptions-ids {
     overflow: auto;
     padding-top: 2%;
@@ -52,12 +52,6 @@ body {
 .loading { 
     display:none;
     padding-left: 50px;
-}
-
-.loading img {
-    width: 20px;
-    height: 20px;
-    margin-top: 1%;
 }
 
 .rna-filter, .filter-operator {
@@ -80,10 +74,6 @@ body {
 
 .matrix-loading {
     padding: 1% 0 0 35%;
-}
-
-.matrix-loading img {
-    margin: 2% 0 0 15%;
 }
 
 .filter-value {
