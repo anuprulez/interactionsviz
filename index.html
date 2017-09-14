@@ -21,9 +21,9 @@
     <div class="col-sm-2 samples-container">
       <div class="sample-ids">
           <div v-for="item in allSamples" class="sample" v-cloak>
-              <input v-bind:id="item.trim()" type="checkbox" value="" title="Check one or more and click on summary."
-                  v-on:click="checkSample( item.trim() )" />
-              <label for="item.trim()" v-on:click.prevent="openAllInteractions( item.trim() )" title="Click to see all interactions for this sample">{{ item.trim() }}</label>
+              <input :id="item" type="checkbox" value="" title="Check one or more and click on summary."
+                  @change="checkSample( item, $event.target.checked )" />
+              <label for="item" @click.prevent="openAllInteractions( item )" title="Click to see all interactions for this sample">{{ item.trim() }}</label>
           </div>
       </div>
     </div>
@@ -31,15 +31,15 @@
       <div class="matrix-loading" v-show="showOverlayLoader" v-cloak>
         <div> Loading results. Please wait. It might take a few minutes... </div>
       </div>
-      <div id="samples-plot">
+      <div id="samples-plot" v-show="!showOverlayLoader">
       </div>
     </div>
   </div>
   <div class="row">
     <div class="col-sm-5">
-      <input type="checkbox" class="check-all-samples" value="false" title="Check/uncheck all samples" />
-      <span>Check/Uncheck all</span>
-      <input type="submit" class="sample-summary" value="Summary" title="Summary" v-on:click="makeSampleSummary()">
+      <input id="checkall_samples" type="checkbox" title="Check/uncheck all samples" />
+      <label for="checkall_samples">  Check all </label>
+      <input type="submit" class="sample-summary" value="Summary" title="Summary" @click="makeSampleSummary()">
       
     </div>
     <div class="col-sm-7">

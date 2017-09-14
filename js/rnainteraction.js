@@ -20,31 +20,38 @@ const multisamplesStore = {
     updateSamples (state, samples) {
         state.samples = samples
     },
-    addSample (state, sampleId) {
-        state.checkedSamples.push( sampleId )
+    addRemoveSample (state, sampleInfo) {
+        if (sampleInfo.status) {
+            state.checkedSamples.push(sampleInfo.sample)
+        }
+        else {
+            let samples = state.checkedSamples
+            samples.splice(samples.indexOf(sampleInfo.sample), 1);
+        }
     },
     setLoader (state, status) {
-        console.log(status)
         state.showLoading = status
     }
   },
   actions: {
-    fetchSamples ( store ) {
-        let url = "http://" + window.location.hostname + ":" + window.location.port + "/?multisamples=true";
-        $.ajax( url ).then(function( samples ) {
+    fetchSamples (store) {
+        let query = '/?multisamples=true',
+            url = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port + query;
+        $.ajax( url ).then((samples) => { // fetch all samples
             samples = samples.split( "\n" )
+            samples = samples.map(sample => sample.trim()) 
             store.commit('updateSamples', samples)
         })
     },
-    fetchCommonInteractions ( store, samples ) {
-        let url = "http://" + window.location.hostname + ":" + window.location.port + "/?sample_ids=" + samples,
-            ids = samples.split( "," )
-        $.ajax( url ).then(function( samples ) {
-            samples = samples.split( "\n" ).map( Number );
-            let matrix = []
-            for( let ctr = 0; ctr < samples.length; ctr = ctr + ids.length ) {
-                let samples_row = samples.slice( ctr, ctr + ids.length );
-                matrix.push( samples_row );
+    fetchCommonInteractions (store, samples) {
+        let query = '/?sample_ids=' + samples,
+            url = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port + query,
+            ids = samples.split(','),
+            matrix = []
+        $.ajax(url).then((samples) => { // compute common interactions among selected samples
+            samples = samples.split( '\n' ).map( Number );
+            for(let ctr = 0; ctr < samples.length; ctr = ctr + ids.length) {
+                matrix.push(samples.slice(ctr, ctr + ids.length));
             }
 	    let data = [
 	      {
@@ -57,21 +64,23 @@ const multisamplesStore = {
 	    let layout = {
 	      height: 500,
 	      width: 700,
-	      title: 'Samples match matrix'
+	      title: 'Common interactions among selected samples'
 	    }
-	    Plotly.newPlot( 'samples-plot', data, layout )
-            store.commit("setLoader", false)
+	    Plotly.newPlot('samples-plot', data, layout )
+            store.commit('setLoader', false)
         })
     }
   }
 };
 
+// State management
 const store = new Vuex.Store({
   modules: {
     multisamplesStore: multisamplesStore
   }
 });
 
+// View
 new Vue({
   el: '#multisamples',
   computed: {
@@ -89,22 +98,18 @@ new Vue({
         return store.getters.getLoader
     }
   },
-  methods: {
-    checkSample ( sampleId ) {
-        store.commit('addSample', sampleId)
+  methods: { // events
+    checkSample (sampleId, status) {
+        store.commit('addRemoveSample', {'sample': sampleId, 'status': status})
     },
     makeSampleSummary () {
         let allCheckedSamples = this.samplesChecked
         if ( allCheckedSamples.length > 0 ) {
-          samplesString = allCheckedSamples.join( "," )
-          store.commit("setLoader", true)
+          samplesString = allCheckedSamples.join(',')
+          store.commit('setLoader', true)
           store.dispatch('fetchCommonInteractions', samplesString)
         }
-    },
-    openAllInteractions ( sample ) {
-   
     }
- 
 }
 });
 
