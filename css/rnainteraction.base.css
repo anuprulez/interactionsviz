@@ -4,6 +4,10 @@ body {
     font-size: 9pt;
 }
 
+[v-cloak] {
+    display: none;
+}
+
 .col-sm-3, .col-sm-5, .col-sm-12 {
     padding-left: 0px;
 }
@@ -68,7 +72,7 @@ body {
     background-color: #dfe3ee;
 }
 
-.filter-operator, .matrix-loading {
+.filter-operator {
     display: none;
 }
 
@@ -121,7 +125,6 @@ body {
 }
 
 .samples-overlay {
-    display: none;
     position: absolute;
     background-color: rgba(0, 0, 0, 0.2);
     left: 0;

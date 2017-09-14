@@ -14,15 +14,21 @@
     </div>
   </div>
 </div>
-<div class="container multi-samples">
+
+<div id="multisamples" class="container multi-samples">
   <div class="row samples">
-    <div class="samples-overlay"></div>
+    <div class="samples-overlay" v-show="showOverlayLoader" v-cloak></div>
     <div class="col-sm-2 samples-container">
       <div class="sample-ids">
+          <div v-for="item in allSamples" class="sample" v-cloak>
+              <input v-bind:id="item.trim()" type="checkbox" value="" title="Check one or more and click on summary."
+                  v-on:click="checkSample( item.trim() )" />
+              <label for="item.trim()" v-on:click.prevent="openAllInteractions( item.trim() )" title="Click to see all interactions for this sample">{{ item.trim() }}</label>
+          </div>
       </div>
     </div>
     <div class="col-sm-10">
-      <div class="matrix-loading">
+      <div class="matrix-loading" v-show="showOverlayLoader" v-cloak>
         <div> Loading results. Please wait. It might take a few minutes... </div>
       </div>
       <div id="samples-plot">
@@ -33,7 +39,7 @@
     <div class="col-sm-5">
       <input type="checkbox" class="check-all-samples" value="false" title="Check/uncheck all samples" />
       <span>Check/Uncheck all</span>
-      <input type="submit" class="sample-summary" value="Summary" title="Summary">
+      <input type="submit" class="sample-summary" value="Summary" title="Summary" v-on:click="makeSampleSummary()">
       
     </div>
     <div class="col-sm-7">
@@ -103,6 +109,8 @@
     <script src="js/underscore.min.js"></script>
     <script src="js/plotly.min.js"></script>
     <script type="text/javascript" src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+    <script src="js/vue.js"></script>
+    <script src="js/vuex.js"></script>
     <script src="js/rnainteraction.js"></script>
   </body>
 </html>
