@@ -44,10 +44,12 @@ var MultiSamples = {
                 var url = "http://" + self.host + ":" + self.port + "/?sample_ids=" + checked_ids;
                 $.get( url, function( samples ) {
                     samples = samples.split( "\n" ).map( Number );
-                    var matrix = [];
-                    for( var ctr = 0; ctr < samples.length; ctr = ctr + ids.length ) {
-                        samples_row = samples.slice( ctr, ctr + ids.length );
-                        matrix.push( samples_row );
+                    var matrix = [],
+                        samples_length = samples.length,
+                        ids_length = ids.length,
+                        plot_title = "Common interactions among samples";
+                    for( var ctr = 0; ctr < samples_length; ctr = ctr + ids_length ) {
+                        matrix.push( samples.slice( ctr, ctr + ids_length ) );
                     }
                     var data = [
                       {
@@ -60,7 +62,7 @@ var MultiSamples = {
                     var layout = {
                       height: 500,
                       width: 700,
-                      title: 'Samples match matrix'
+                      title: plot_title
                     };
                     Plotly.newPlot( 'samples-plot', data, layout );
                     $( '#samples-plot' ).show();
