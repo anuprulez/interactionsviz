@@ -4,7 +4,7 @@ This helps visualizing the gene pair interactions
 
 How to use:
 
-1. Clone the link: https://github.com/anuprulez/interactionsviz
+1. Clone the link: https://github.com/anuprulez/interactionsviz (for its Vue representation, please checkout branch - vue_version)
 
 2. Move to $ cd interactionsviz
 

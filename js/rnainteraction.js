@@ -5,7 +5,7 @@ const multisamplesStore = {
     checkedSamples: [],
     showLoading: false
   },
-  getters: {
+  getters: { // get the model
     getSamples: state => {
         return state.samples
     },
@@ -16,7 +16,7 @@ const multisamplesStore = {
         return state.showLoading
     }
   },
-  mutations: {
+  mutations: { // update the model
     updateSamples (state, samples) {
         state.samples = samples
     },
@@ -49,10 +49,16 @@ const multisamplesStore = {
             ids = samples.split(','),
             matrix = []
         $.ajax(url).then((samples) => { // compute common interactions among selected samples
-            samples = samples.split( '\n' ).map( Number );
-            for(let ctr = 0; ctr < samples.length; ctr = ctr + ids.length) {
-                matrix.push(samples.slice(ctr, ctr + ids.length));
-            }
+            samples = samples.split('\n').map(Number);
+            let ids_length = ids.length,
+                samples_length = samples.length,
+                ctr = 0;
+            samples.forEach(() => {
+                if( ctr < samples_length ) {
+                    matrix.push(samples.slice(ctr, ctr + ids_length))
+                    ctr += ids_length
+                }
+            })
 	    let data = [
 	      {
 	        z: matrix,
