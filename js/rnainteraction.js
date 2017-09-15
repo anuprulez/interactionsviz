@@ -11,8 +11,9 @@ var MultiSamples = {
             $el_samples = $( '.sample-ids' );
         _.each( samples, function( sample ) {
             sample = sample.trim();
-            template = template + '<div class="sample"><input class="file-sample-checkbox" type="checkbox" id="'+ sample +'" value="" title="Check one or more and click on summary." />' +
-                       '<span class="file-sample" id="'+ sample +'" title="Click to see all interactions for this sample">' + sample  + '</span></div>';
+            template = template + '<div class="sample"><input class="file-sample-checkbox" type="checkbox" id="'+ sample + '"' +
+                       'value="" title="Check one or more and click on summary." />' + '<label class="file-sample" id="'+ sample + '"' +
+                       'for="'+ sample +'" title="Click to see all interactions for this sample">' + sample + '</label></div>';
         });
         $el_samples.html( template );
         $( '.multi-samples' ).show();
@@ -95,6 +96,7 @@ var MultiSamples = {
         // event for showing interactions for the selected sample
         $el_sample.on( 'click', function( e ) {
             e.preventDefault();
+            e.stopPropagation();
             $( '.multi-samples' ).hide();
             $( '.one-sample' ).show();
             SampleInteractions.register_page_events();
