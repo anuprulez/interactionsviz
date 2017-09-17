@@ -121,12 +121,11 @@ var MultiSamples = {
 // for the selected one with search, sort and filtering features
 var SampleInteractions = {
 
-    transcription_records: [],
     min_query_length: 3,
     host: window.location.hostname,
     port: window.location.port,
-    search_text: "",
     sample_name: "",
+    current_results: [],
     
     /** Build fancy scroll for the interactions */
     build_fancy_scroll: function() {
@@ -185,7 +184,8 @@ var SampleInteractions = {
             $el_filter_val = $( '.filter-value' ),
             $el_summary = $( '.rna-summary' ),
             $el_back = $( '.back-samples' ),
-            $el_check_all = $( '.check-all-interactions' );
+            $el_check_all = $( '.check-all-interactions' ),
+            $el_export = $( '.export-results' );
 
         // search query event
         $el_search_gene.on( 'keyup', function( e ) {
@@ -288,6 +288,24 @@ var SampleInteractions = {
             e.preventDefault();
             window.location.reload();
         });
+
+        $el_export.on( 'click', function( e ) {
+            e.preventDefault();
+            self.export_results();
+       });
+    },
+
+    export_results: function() {
+        var tsv_data = "",
+            link = document.createElement('a')
+        _.each( this.current_results, function( item ) {
+            tsv_data = tsv_data + item.join("\t") + "\n";
+        });
+        tsv_data = window.encodeURIComponent(tsv_data);
+        link.setAttribute('href', 'data:application/octet-stream,' + tsv_data);
+        link.setAttribute('download', Date.now().toString(16) + '_results.tsv');
+        document.body.appendChild(link);
+        link.click();
     },
 
     /** Register client-side events */
@@ -330,7 +348,7 @@ var SampleInteractions = {
                 _.each(records, function( record ) {
                     rna_records.push( JSON.parse( record ) );
                 });
-                self.transcription_records = rna_records;
+                self.current_results = rna_records;
                 self.build_left_panel( rna_records );
             }
             else {

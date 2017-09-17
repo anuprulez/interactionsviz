@@ -16,8 +16,7 @@ class RNAInteraction:
         """ Init method. """
         self.default_order_by = 'score'
         self.default_ascending = False
-        self.searchable_fields = [ 'geneid1', 'geneid2' ]
-        self.total_records = 10000
+        self.searchable_fields = [ 'txid1', 'txid2', 'geneid1', 'geneid2', 'symbol1', 'symbol2', 'type1', 'type2' ]
         self.number_samples = 10
         self.sample_prefix = 'sample'
         self.sqlite_table_name = 'interactions'
@@ -34,7 +33,9 @@ class RNAInteraction:
     def make_samples( self, file_path ):
         """ Take out records for multiple samples """
         interactions_dataframe = pd.read_table( file_path, sep='\t', header=0)
-        size_each_file = self.total_records / self.number_samples
+        # random sampling
+        interactions_dataframe = interactions_dataframe.sample(frac=1).reset_index(drop=True)
+        size_each_file = len(interactions_dataframe) / self.number_samples
         for sample_number in xrange( 0, self.number_samples ):
             fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
             file_name = self.sample_prefix + str( sample_number + 1 ) + self.hdf_file_ext
@@ -108,8 +109,15 @@ class RNAInteraction:
     def search_data( self, file_path, search_query, how_many=1000 ):
         """ Select data based on a search query """
         all_data = self.read_hdf_sample( file_path )
-        filtered_data = all_data[ all_data[ self.searchable_fields[ 0 ] ].str.contains( search_query ) | all_data[ self.searchable_fields[ 1 ] ].str.contains( search_query ) ]
-        return filtered_data[ :how_many ]
+        filtered_data = all_data[ all_data[ self.searchable_fields[ 0 ] ].str.lower().str.contains( search_query.lower() ) | \
+                                  all_data[ self.searchable_fields[ 1 ] ].str.lower().str.contains( search_query.lower() ) | \
+                                  all_data[ self.searchable_fields[ 2 ] ].str.lower().str.contains( search_query.lower() ) | \
+                                  all_data[ self.searchable_fields[ 3 ] ].str.lower().str.contains( search_query.lower() ) | \
+                                  all_data[ self.searchable_fields[ 4 ] ].str.lower().str.contains( search_query.lower() ) | \
+                                  all_data[ self.searchable_fields[ 5 ] ].str.lower().str.contains( search_query.lower() ) | \
+                                  all_data[ self.searchable_fields[ 6 ] ].str.lower().str.contains( search_query.lower() ) | \
+                                  all_data[ self.searchable_fields[ 7 ] ].str.lower().str.contains( search_query.lower() ) ]
+        return filtered_data
 
     @classmethod
     def make_summary( self, file_path, summary_record_ids ):
@@ -141,9 +149,10 @@ class RNAInteraction:
             else:
                 all_data = all_data[ all_data[ 'score' ] != filter_value ]
         elif filter_type == 'family':
-            all_data = all_data[ all_data[ 'type1' ].str.contains( filter_value ) | all_data[ 'type2' ].str.contains( filter_value ) ]
+            all_data = all_data[ all_data[ 'type1' ].str.lower().str.contains( filter_value.lower() ) | \
+                                 all_data[ 'type2' ].str.lower().str.contains( filter_value.lower() ) ]
 
-        return all_data[ :how_many ]
+        return all_data
 
 
 if __name__ == "__main__":
