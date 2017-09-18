@@ -200,12 +200,6 @@ if __name__ == "__main__":
                 file_names = RNAInteraction.get_sample_names( file_name )
                 for name in file_names:
                     content += name + '\n'
-            elif( "summary_ids" in query ):
-                sample_name = params[ 'sample_name' ][ 0 ]
-                summary_ids = params[ 'summary_ids' ][ 0 ]
-                summary = data.make_summary( sample_name, summary_ids )
-                for index, row in summary.iterrows():
-                    content += row.to_json( orient='records' ) + '\n'
             elif( "filter" in query ):
                 sample_name = params[ 'sample_name' ][ 0 ]
                 filtered_data = data.filter_data( sample_name, params )

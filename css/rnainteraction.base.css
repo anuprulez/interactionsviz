@@ -8,7 +8,11 @@ body {
     padding-left: 0px;
 }
 
-.one-sample {
+.rna-header-row {
+    margin: 0px -90px 0px -90px;
+}
+
+.one-sample, .loading-samples, .sample-ids {
     display: none;
 }
 
@@ -33,8 +37,11 @@ body {
 
 .samples {
     height: 80%;
-    border-top: 1px solid black;
     border-bottom: 1px solid black;
+}
+
+.loading-samples {
+    margin: 1.5% 0 0 25%;
 }
 
 .rna-results {
@@ -65,7 +72,8 @@ body {
 }
 
 .sample:hover {
-    background-color: #dfe3ee;
+    background-color: #337ab7;
+    color: white;
 }
 
 .filter-operator, .matrix-loading {
@@ -88,18 +96,25 @@ body {
 }
 
 .pair-mouseenter {
-    background-color: #dfe3ee;
+    background-color: #337ab7;
+    color: white;
     cursor: pointer;
 }
 
-.rna-summary, .sample-summary {
+.btn-rna {
+    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
+    font-size: 9pt;
+    margin-top: 1%;
+}
+
+.sample-summary {
     margin-top: 1%;
 }
 
 .rna-header {
     background-color: #2c3143;
     color: white;
-    padding-left: 0.5%;
+    padding-left: 6%;
     cursor: pointer;
 }
 

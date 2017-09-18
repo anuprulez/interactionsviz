@@ -24,10 +24,13 @@ var MultiSamples = {
     get_samples: function() {
         var self = this,
             url = "http://" + self.host + ":" + self.port + "/?multisamples=true";
+        $( '.loading-samples' ).show();
         $.get( url, function( samples ) {
             samples = samples.split( "\n" );
             self.build_samples_list( samples );
             self.register_events();
+            $( '.loading-samples' ).hide();
+            $( '.sample-ids' ).show();
         });
     },
 
@@ -136,7 +139,6 @@ var SampleInteractions = {
         $( '.filter-operator' ).hide();
         $( '.filter-operator' ).val( "-1" );
         $( '.filter-value' )[ 0 ].value = "";
-        $( '.check-all-interactions' )[ 0 ].checked = false;
     },
     
     /** Build fancy scroll for the interactions */
@@ -198,7 +200,8 @@ var SampleInteractions = {
             $el_back = $( '.back-samples' ),
             $el_check_all = $( '.check-all-interactions' ),
             $el_export = $( '.export-results' ),
-            $el_all_interactions = $( '.check-all-interactions' );
+            $el_all_interactions = $( '.check-all-interactions' ),
+            $el_reset = $( '.reset-filters' );
 
         // search query event
         $el_search_gene.on( 'keyup', function( e ) {
@@ -259,35 +262,34 @@ var SampleInteractions = {
             e.preventDefault();
             var checked_ids = "",
                 checkboxes = $( '.rna-interaction' ),
-                url = "";
+                url = "",
+                summary_items = [],
+                current_results_length = self.current_results.length,
+                summary_result_type1 = {},
+                summary_result_type2 = {};
             _.each( checkboxes, function( item ) {
                 if( item.checked ) {
                     checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
                 }
             });
-            if( checked_ids !== "" ) {
-                url = "http://" + self.host + ":" + self.port + "/?sample_name="+ SampleInteractions.sample_name +"&summary_ids=" + checked_ids;
-                // fetch data for summary interactions
-                $.get( url, function( result ) {
-                    var summary = [],
-                       summary_records = result.split( "\n" ),
-                       summary_result_type1 = {},
-                       summary_result_type2 = {};
-
-                    _.each(summary_records, function( item ) {
-                        summary.push( JSON.parse( item ) );
-                    });
-                    // summary fields - geneid (1 and 2) and type (1 and 2)
-                    for ( var i = 0; i < summary.length; i++ ) {
-                        summary_result_type1[ summary[ i ][ 8 ] ] = ( summary_result_type1[ summary[ i ][ 8 ] ] || 0 ) + 1;
-                        summary_result_type2[ summary[ i ][ 9 ] ] = ( summary_result_type2[ summary[ i ][ 9 ] ] || 0 ) + 1;
+            checked_ids = checked_ids.split( "," );
+            for(var ctr_ids = 0; ctr_ids < checked_ids.length; ctr_ids++) {
+                for(var ctr = 0; ctr < current_results_length; ctr++) {
+                    var item = self.current_results[ ctr ];
+                    if ( checked_ids[ ctr_ids ] === item[ 0 ] ) {
+                        summary_items.push( item );
+                        break;
                     }
-
-                    // plot the summary as pie charts
-                    self.plot_summary_charts( summary_result_type1, "rna-type1", 'Gene 1 family distribution' );
-                    self.plot_summary_charts( summary_result_type2, "rna-type2", 'Gene 2 family distribution' );                
-                });
+                }
             }
+            // summary fields - geneid (1 and 2) and type (1 and 2)
+            for ( var i = 0; i < summary_items.length; i++ ) {
+                summary_result_type1[ summary_items[ i ][ 8 ] ] = ( summary_result_type1[ summary_items[ i ][ 8 ] ] || 0 ) + 1;
+                summary_result_type2[ summary_items[ i ][ 9 ] ] = ( summary_result_type2[ summary_items[ i ][ 9 ] ] || 0 ) + 1;
+            }
+            // plot the summary as pie charts
+            self.plot_summary_charts( summary_result_type1, "rna-type1", 'Gene 1 family distribution' );
+            self.plot_summary_charts( summary_result_type2, "rna-type2", 'Gene 2 family distribution' );
         });
 
         // back to all samples view
@@ -308,6 +310,12 @@ var SampleInteractions = {
                 item.checked = checkall_status ? true : false;
             });
         });
+        
+        $el_reset.on( 'click', function( e ) {
+            e.preventDefault();
+            self.set_defaults();
+        });
+        
     },
 
     export_results: function() {

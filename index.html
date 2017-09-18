@@ -8,9 +8,9 @@
   <body>
 
 <div class="container">
-  <div class="row">
+  <div class="row rna-header-row">
     <div class="col-sm-12 rna-header">
-       <h3>RNA Interactions</h3>
+       <h3>RNA-RNA Interactions</h3>
     </div>
   </div>
 </div>
@@ -18,6 +18,9 @@
   <div class="row samples">
     <div class="samples-overlay"></div>
     <div class="col-sm-2 samples-container">
+      <div class="loading-samples">
+	loading samples...
+      </div>
       <div class="sample-ids">
       </div>
     </div>
@@ -33,8 +36,9 @@
     <div class="col-sm-5">
       <input id="check_all" type="checkbox" class="check-all-samples" value="false" title="Check all" />
       <label for="check_all">Check all</label>
-      <input type="submit" class="sample-summary" value="Summary" title="Summary">
-      
+      <button type="button" class="sample-summary btn btn-primary btn-rna" title="Summary">
+          Summary
+      </button>
     </div>
     <div class="col-sm-7">
     </div>
@@ -89,9 +93,18 @@
     <div class="col-sm-5">
       <input id="check_all_interactions" type="checkbox" class="check-all-interactions" value="false" title="Check all" />
       <label for="check_all">Check all</label>
-      <input type="submit" class="rna-summary" value="Summary" title="Summary">
-      <input type="submit" class="export-results" value="Export" title="Export results as tab-separated file">
-      <input type="submit" class="back-samples" value="Back" title="Back to all samples">
+      <button type="button" class="rna-summary btn btn-primary btn-rna" title="Get summary of RNA-RNA interactions">
+          Summary
+      </button>
+      <button type="button" class="export-results btn btn-primary btn-rna" title="Export results as tab-separated file">
+          Export
+      </button>
+      <button type="button" class="reset-filters btn btn-primary btn-rna" title="Reset all the filters">
+          Reset filters
+      </button>
+      <button type="button" class="back-samples btn btn-primary btn-rna" title="Back to all samples">
+          Back
+      </button>
     </div>
     <div class="col-sm-7">
     </div>
