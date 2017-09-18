@@ -271,8 +271,6 @@ var SampleInteractions = {
                 $.get( url, function( result ) {
                     var summary = [],
                        summary_records = result.split( "\n" ),
-                       summary_result_geneid1 = {},
-                       summary_result_geneid2 = {},
                        summary_result_type1 = {},
                        summary_result_type2 = {};
 
@@ -281,17 +279,13 @@ var SampleInteractions = {
                     });
                     // summary fields - geneid (1 and 2) and type (1 and 2)
                     for ( var i = 0; i < summary.length; i++ ) {
-                        summary_result_geneid1[ summary[ i ][ 4 ] ] = ( summary_result_geneid1[ summary[ i ][ 4 ] ] || 0 ) + 1;
                         summary_result_type1[ summary[ i ][ 8 ] ] = ( summary_result_type1[ summary[ i ][ 8 ] ] || 0 ) + 1;
-                        summary_result_geneid2[ summary[ i ][ 5 ] ] = ( summary_result_geneid2[ summary[ i ][ 5 ] ] || 0 ) + 1;
                         summary_result_type2[ summary[ i ][ 9 ] ] = ( summary_result_type2[ summary[ i ][ 9 ] ] || 0 ) + 1;
                     }
 
                     // plot the summary as pie charts
-                    self.plot_summary_charts( summary_result_geneid1, "rna-gene1", 'RNA gene 1 distribution' );
-                    self.plot_summary_charts( summary_result_geneid2, "rna-gene2", 'RNA gene 2 distribution' );
-                    self.plot_summary_charts( summary_result_type1, "rna-type1", 'RNA gene 1 family distribution' );
-                    self.plot_summary_charts( summary_result_type2, "rna-type2", 'RNA gene 2 family distribution' );                
+                    self.plot_summary_charts( summary_result_type1, "rna-type1", 'Gene 1 family distribution' );
+                    self.plot_summary_charts( summary_result_type2, "rna-type2", 'Gene 2 family distribution' );                
                 });
             }
         });
