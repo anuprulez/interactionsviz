@@ -108,6 +108,7 @@ var MultiSamples = {
             SampleInteractions.sample_name = $( this )[ 0 ].id;
             SampleInteractions.show_data( "" );
             SampleInteractions.set_defaults();
+            $( '.sample-name' ).text( $( this )[ 0 ].id );
         });
 
         // event for checking/ unchecking all samples
@@ -139,6 +140,7 @@ var SampleInteractions = {
         $( '.filter-operator' ).hide();
         $( '.filter-operator' ).val( "-1" );
         $( '.filter-value' )[ 0 ].value = "";
+        $( '.check-all-interactions' )[ 0 ].checked = false;
     },
     
     /** Build fancy scroll for the interactions */
@@ -251,8 +253,8 @@ var SampleInteractions = {
                 if ( filter_type === "-1" || query === "" ) {
                     return;
                 }
-                var url = "http://" + self.host + ":" + self.port + "/?sample_name="+ SampleInteractions.sample_name +"&filter_type=" + filter_type + 
-                    "&filter_op=" + filter_operator + "&filter_value=" + query;
+                var url = "http://" + self.host + ":" + self.port + "/?sample_name="+ SampleInteractions.sample_name +
+                          "&filter_type=" + filter_type + "&filter_op=" + filter_operator + "&filter_value=" + query;
                 self.show_data( "", url );
             }
         });
@@ -295,7 +297,9 @@ var SampleInteractions = {
         // back to all samples view
         $el_back.on( 'click', function( e ) {
             e.preventDefault();
-            window.location.reload();
+            $( '.multi-samples' ).show();
+            $( '.one-sample' ).hide();
+            //window.location.reload();
         });
 
         $el_export.on( 'click', function( e ) {
@@ -318,6 +322,7 @@ var SampleInteractions = {
         
     },
 
+    /** Export as tab separated file */
     export_results: function() {
         var tsv_data = "",
             link = document.createElement('a')
@@ -356,8 +361,6 @@ var SampleInteractions = {
         
         $( '.transcriptions-ids' ).remove();
         // clear old charts
-        $( '#rna-gene1' ).empty();
-        $( '#rna-gene2' ).empty();
         $( '#rna-type1' ).empty();
         $( '#rna-type2' ).empty();
         $el_loading.show();
