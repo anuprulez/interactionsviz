@@ -104,6 +104,7 @@ var MultiSamples = {
             SampleInteractions.register_page_events();
             SampleInteractions.sample_name = $( this )[ 0 ].id;
             SampleInteractions.show_data( "" );
+            SampleInteractions.set_defaults();
         });
 
         // event for checking/ unchecking all samples
@@ -126,6 +127,17 @@ var SampleInteractions = {
     port: window.location.port,
     sample_name: "",
     current_results: [],
+
+    /** Set UI elements to default values */
+    set_defaults: function() {
+        $( '.search-gene' )[ 0 ].value = "";
+        $( '.rna-sort' ).val( "score" );
+        $( '.rna-filter' ).val( "-1" );
+        $( '.filter-operator' ).hide();
+        $( '.filter-operator' ).val( "-1" );
+        $( '.filter-value' )[ 0 ].value = "";
+        $( '.check-all-interactions' )[ 0 ].checked = false;
+    },
     
     /** Build fancy scroll for the interactions */
     build_fancy_scroll: function() {
@@ -142,7 +154,7 @@ var SampleInteractions = {
             self = this,
             $el_transcriptions_ids = $( '.transcriptions-ids' );
         _.each( records, function( record ) {
-            template = template + '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" />' +
+            template = template + '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" class="rna-interaction" />' +
                        '<span>' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
         });
         $el_transcriptions_ids.html( template );
@@ -185,7 +197,8 @@ var SampleInteractions = {
             $el_summary = $( '.rna-summary' ),
             $el_back = $( '.back-samples' ),
             $el_check_all = $( '.check-all-interactions' ),
-            $el_export = $( '.export-results' );
+            $el_export = $( '.export-results' ),
+            $el_all_interactions = $( '.check-all-interactions' );
 
         // search query event
         $el_search_gene.on( 'keyup', function( e ) {
@@ -245,7 +258,7 @@ var SampleInteractions = {
         $el_summary.on( 'click', function( e ) {
             e.preventDefault();
             var checked_ids = "",
-                checkboxes = $( '.rna-pair' ).find( 'input[type="checkbox"]' ),
+                checkboxes = $( '.rna-interaction' ),
                 url = "";
             _.each( checkboxes, function( item ) {
                 if( item.checked ) {
@@ -292,7 +305,15 @@ var SampleInteractions = {
         $el_export.on( 'click', function( e ) {
             e.preventDefault();
             self.export_results();
-       });
+        });
+
+        $el_all_interactions.on( 'click', function( e ) {
+            var $el_interactions_checked = $( '.rna-interaction' ),
+                checkall_status = $( this )[ 0 ].checked;
+            _.each( $el_interactions_checked, function( item ) {
+                item.checked = checkall_status ? true : false;
+            });
+        });
     },
 
     export_results: function() {
