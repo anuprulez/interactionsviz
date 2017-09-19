@@ -1,9 +1,9 @@
 
-function build_fancy_scroll( class_name, color ) {
+function build_fancy_scroll( class_name ) {
     $( '.' + class_name ).mCustomScrollbar({
             theme:"minimal"
         });
-    $( '.' + class_name + ' .mCSB_dragger_bar' ).css( 'background-color', color );
+    $( '.' + class_name + ' .mCSB_dragger_bar' ).css( 'background-color', 'black' );
 }
 
 
@@ -32,7 +32,7 @@ var MultiSamples = {
         });
         $el_samples.html( template );
         // add fancy scroll bar
-        build_fancy_scroll( 'sample-ids', 'black' );
+        build_fancy_scroll( 'sample-ids' );
         $( '.multi-samples' ).show();
         $( '.one-sample' ).hide();
     },
@@ -56,18 +56,17 @@ var MultiSamples = {
     make_samples_summary: function( checked_ids ) {
         var self = this;
         if( checked_ids && checked_ids.length > 0 ) {
-            var ids = checked_ids.split( "," );
+            var ids = checked_ids.split( "," ),
+                ids_length = ids.length,
+                plot_title = "Common interactions among samples";
             if ( ids.length > 0) {
                 $( '#samples-plot' ).hide();
-                $( '.matrix-loading' ).show();
-                $( '.samples-overlay' ).show();
+                $( '.loader' ).show();
                 var url = "http://" + self.host + ":" + self.port + "/?sample_ids=" + checked_ids;
                 $.get( url, function( samples ) {
                     samples = samples.split( "\n" ).map( Number );
                     var matrix = [],
-                        samples_length = samples.length,
-                        ids_length = ids.length,
-                        plot_title = "Common interactions among samples";
+                        samples_length = samples.length;
                     for( var ctr = 0; ctr < samples_length; ctr = ctr + ids_length ) {
                         matrix.push( samples.slice( ctr, ctr + ids_length ) );
                     }
@@ -86,8 +85,7 @@ var MultiSamples = {
                     };
                     Plotly.newPlot( 'samples-plot', data, layout );
                     $( '#samples-plot' ).show();
-                    $( '.samples-overlay' ).hide();
-                    $( '.matrix-loading' ).hide();
+                    $( '.loader' ).hide();
                 });
             }
         }
@@ -167,6 +165,15 @@ var SampleInteractions = {
         $( '.filter-operator' ).val( "-1" );
         $( '.filter-value' )[ 0 ].value = "";
         $( '.check-all-interactions' )[ 0 ].checked = false;
+        this.make_summary_empty();
+    },
+
+    /** Clear the items in the summary sections */
+    make_summary_empty: function() {
+        $( "#rna-type1" ).empty();
+        $( "#rna-type2" ).empty();
+        $( "#rna-score1" ).empty();
+        $( "#rna-score2" ).empty();
     },
 
     /** Build the left panel */ 
@@ -175,12 +182,12 @@ var SampleInteractions = {
             self = this,
             $el_transcriptions_ids = $( '.transcriptions-ids' );
         // take only the data records and not headers
-        records = records.slice( 0, self.to_show + 1 );
+        records = records.slice( 0, self.to_show );
         _.each( records, function( record ) {
             template = template + self._templateRNAInteractions( record );
         });
         $el_transcriptions_ids.html( template );
-        build_fancy_scroll( 'transcriptions-ids', 'black' );
+        build_fancy_scroll( 'transcriptions-ids' );
         $el_transcriptions_ids.show();
         self.register_events( self );
     },
@@ -188,7 +195,7 @@ var SampleInteractions = {
     /** Plot pie charts for interactions chosen for summary */
     plot_summary_charts: function( dict, container, name ) {
         var layout = {
-            height:350,
+            height:400,
             width: 500,
             title: name
         },
@@ -206,6 +213,20 @@ var SampleInteractions = {
             type: 'pie'
         }];
         Plotly.newPlot( container, data, layout );
+    },
+
+    plot_histograms: function( data, container, name ) {
+	var trace = {
+	    x: data,
+	    type: 'histogram',
+        }, 
+        layout = {
+            height:400,
+            width: 500,
+            title: name
+        }; 
+        var plot_data = [ trace ];
+	Plotly.newPlot( container, plot_data, layout );
     },
 
     /** Register events for the page elements */
@@ -278,8 +299,10 @@ var SampleInteractions = {
                 url = "",
                 summary_items = [],
                 current_results_length = self.current_results.length,
-                summary_result_type1 = {},
-                summary_result_type2 = {};
+                summary_result_type2 = {},
+                summary_result_score = [],
+                summary_result_score1 = [],
+                summary_result_score2 = [];
             _.each( checkboxes, function( item ) {
                 if( item.checked ) {
                     checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
@@ -297,14 +320,23 @@ var SampleInteractions = {
             }
             // summary fields - geneid (1 and 2) and type (1 and 2)
             for ( var i = 0; i < summary_items.length; i++ ) {
-                summary_result_type1[ summary_items[ i ][ 8 ] ] = ( summary_result_type1[ summary_items[ i ][ 8 ] ] || 0 ) + 1;
                 summary_result_type2[ summary_items[ i ][ 9 ] ] = ( summary_result_type2[ summary_items[ i ][ 9 ] ] || 0 ) + 1;
+                summary_result_score1.push( summary_items[ i ][ 16 ] );
+                summary_result_score2.push( summary_items[ i ][ 17 ] );
+                summary_result_score.push( summary_items[ i ][ 18 ] );
             }
-            $( "#rna-type1" ).empty();
-            $( "#rna-type2" ).empty();
-            // plot the summary as pie charts
-            self.plot_summary_charts( summary_result_type1, "rna-type1", 'Gene 1 family distribution' );
-            self.plot_summary_charts( summary_result_type2, "rna-type2", 'Gene 2 family distribution' );
+
+            self.make_summary_empty();
+ 
+            // build scrolls
+            build_fancy_scroll( "first-gene" );
+            build_fancy_scroll( "second-gene" );
+
+            // plot the summary as pie charts and histograms
+            self.plot_histograms( summary_result_score, "rna-type1", 'Score distribution' );
+            self.plot_summary_charts( summary_result_type2, "rna-type2", 'Gene2 family distribution' );
+            self.plot_histograms( summary_result_score1, "rna-score1", 'Score1 distribution' );
+            self.plot_histograms( summary_result_score2, "rna-score2", 'Score2 distribution' );
         });
 
         // back to all samples view
@@ -393,21 +425,9 @@ var SampleInteractions = {
             $el_second_gene = $( "#rna-type2" ),
             template_gene1 = "",
             template_gene2 = "";
-        $el_first_gene.empty().append( self._templateInformation( item, "info-gene1", 0 ) );
-        $el_second_gene.empty().append( self._templateInformation( item, "info-gene2", 1 ) );
-    },
-
-    /** Template for showing information of the selected interaction */
-    _templateInformation: function( item, id, file_pos, header_text ) {
-        return '<div id="'+ id +'">' +
-	           '<ul>' +
-	               '<li><p>Geneid: <b>' + item[ 4 + file_pos ] + '</b></p></li>' +
-	               '<li><p>Symbol: <b>' + item[ 6 + file_pos ] + '</b></p></li>' +
-	               '<li><p>Type: <b>' + item[ 8 + file_pos ] + '</b></p></li>' +
-	               '<li><p>Score'+ (file_pos + 1) +': <b>' + item[ 16 + file_pos ] + '</b></p></li>' +
-                       '<li><p>Score: <b>' + item[ 18 ] + '</b></p></li>' +
-	            '</ul>' +
-	        '</div>';
+        self.make_summary_empty();
+        $el_first_gene.append( self._templateInformation( item, "info-gene1", 0 ) );
+        $el_second_gene.append( self._templateInformation( item, "info-gene2", 1 ) );
     },
 
     /** Show data in the left panel */
@@ -419,9 +439,8 @@ var SampleInteractions = {
             $el_transcriptions_ids_parent = $( '.rna-transcriptions-container' );
         
         $( '.transcriptions-ids' ).remove();
-        // clear old charts
-        $( '#rna-type1' ).empty();
-        $( '#rna-type2' ).empty();
+        // reset the elements
+        self.make_summary_empty();
         $( '.check-all-interactions' )[ 0 ].checked = false;
         $el_loading.show();
         // pull all the data
@@ -452,6 +471,19 @@ var SampleInteractions = {
     _templateRNAInteractions: function( record ) {
         return '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" class="rna-interaction" />' +
                '<span class="rna-pair-interaction">' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
+    },
+
+    /** Template for showing information of the selected interaction */
+    _templateInformation: function( item, id, file_pos, header_text ) {
+        return '<div id="'+ id +'">' +
+	           '<ul>' +
+	               '<li><p>Geneid: <b>' + item[ 4 + file_pos ] + '</b></p></li>' +
+	               '<li><p>Symbol: <b>' + item[ 6 + file_pos ] + '</b></p></li>' +
+	               '<li><p>Type: <b>' + item[ 8 + file_pos ] + '</b></p></li>' +
+	               '<li><p>Score'+ (file_pos + 1) +': <b>' + item[ 16 + file_pos ] + '</b></p></li>' +
+                       '<li><p>Score: <b>' + item[ 18 ] + '</b></p></li>' +
+	            '</ul>' +
+	        '</div>';
     }
 };
 

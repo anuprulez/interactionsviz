@@ -113,7 +113,12 @@ body {
 .first-gene {
     height: 100%;
     border-right: 1px solid black;
-    overflow: visible;
+    overflow: auto;
+}
+
+.second-gene {
+    height: 100%;
+    overflow: auto;
 }
 
 .pair-mouseenter {
@@ -132,11 +137,6 @@ body {
     margin-top: 1%;
 }
 
-#rna-type1, #rna-type2 {
-    overflow: auto;
-    height: 100%;
-    width: 100%;
-}
 
 #info-gene1, #info-gene2 { padding-top: 2%; }
 #info-gene1 ul li p { padding: 1%; border-left: 1px solid black; font-size: 11pt; }
