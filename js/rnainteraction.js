@@ -101,7 +101,7 @@ var MultiSamples = {
             $el_check_all = $( '.check-all-samples' );
 
         // make summary for selected samples
-        $el_summary.on( 'click', function( e ) {
+        $el_summary.off( 'click' ).on( 'click', function( e ) {
             e.preventDefault();
             e.stopPropagation();
             var checked_ids = "",
@@ -116,7 +116,7 @@ var MultiSamples = {
         });
 
         // event for showing interactions for the selected sample
-        $el_sample.on( 'click', function( e ) {
+        $el_sample.off( 'click' ).on( 'click', function( e ) {
             e.preventDefault();
             e.stopPropagation();
             $( '.multi-samples' ).hide();
@@ -129,7 +129,7 @@ var MultiSamples = {
         });
 
         // event for checking/ unchecking all samples
-        $el_check_all.on( 'click', function( e ) {
+        $el_check_all.off( 'click' ).on( 'click', function( e ) {
             var checkall_status = $( this )[ 0 ].checked,
                 all_samples_checkboxes = $( '.file-sample-checkbox' );
             _.each( all_samples_checkboxes, function( item ) {
@@ -154,7 +154,9 @@ var SampleInteractions = {
     host: window.location.hostname,
     port: window.location.port,
     sample_name: "",
+    headers: [],
     current_results: [],
+    to_show: 1000,
 
     /** Set UI elements to default values */
     set_defaults: function() {
@@ -172,14 +174,17 @@ var SampleInteractions = {
         var template = "",
             self = this,
             $el_transcriptions_ids = $( '.transcriptions-ids' );
+        // take only the data records and not headers
+        records = records.slice( 0, self.to_show + 1 );
         _.each( records, function( record ) {
-            template = template + '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" class="rna-interaction" />' +
-                       '<span>' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
+            template = template + self._templateRNAInteractions( record );
         });
-        $el_transcriptions_ids.html( template );
-        build_fancy_scroll( 'transcriptions-ids', 'black' );
-        $el_transcriptions_ids.show();
-        self.register_events();
+        var promise = Promise.resolve( $el_transcriptions_ids.html( template ) );
+        promise.then(function() {
+            build_fancy_scroll( 'transcriptions-ids', 'black' );
+            $el_transcriptions_ids.show();
+            self.register_events();
+        });
     },
 
     /** Plot pie charts for interactions chosen for summary */
@@ -221,7 +226,7 @@ var SampleInteractions = {
             $el_reset = $( '.reset-filters' );
 
         // search query event
-        $el_search_gene.on( 'keyup', function( e ) {
+        $el_search_gene.off( 'keyup' ).on( 'keyup', function( e ) {
             e.preventDefault();
             var query = $( this )[ 0 ].value;
             if( query.length >= self.min_query_length ) {
@@ -230,7 +235,7 @@ var SampleInteractions = {
                 }
             }
             else if ( query.length === 0 ) {
-                self.show_data( "" );
+                //self.show_data( "" );
             }
             else {
                 return false;
@@ -238,14 +243,14 @@ var SampleInteractions = {
         });
 
         // onchange for sort
-        $el_sort.on( 'change', function( e ) {
+        $el_sort.off( 'change' ).on( 'change', function( e ) {
             e.preventDefault();
             self.sort_field = $( this )[ 0 ].value;
             self.show_data( "" );
         });
 
         // onchange for filter
-        $el_filter.on( 'change', function( e ) {
+        $el_filter.off( 'change' ).on( 'change', function( e ) {
             e.preventDefault();
             var value = $( this )[ 0 ].value;
             // if the selected filter is 'score', show the selectbox for operators
@@ -253,14 +258,14 @@ var SampleInteractions = {
         });
 
         // fetch records using filter's value
-        $el_filter_val.on( 'keyup', function( e ) {
+        $el_filter_val.off( 'keyup' ).on( 'keyup', function( e ) {
             e.preventDefault();
             var query = $( this )[ 0 ].value,
                 filter_type = "",
                 filter_operator = "";
             // For no query, just build left panel with complete data
             if ( !query ) {
-                self.show_data( "" );
+                //self.show_data( "" );
             }
             if( e.which === 13 ) { // search on enter click
                 filter_type = $el_filter.find( ":selected" ).val();
@@ -275,7 +280,7 @@ var SampleInteractions = {
         });
 
         // click for checkboxes
-        $el_summary.on( 'click', function( e ) {
+        $el_summary.off( 'click' ).on( 'click', function( e ) {
             e.preventDefault();
             var checked_ids = "",
                 checkboxes = $( '.rna-interaction' ),
@@ -310,19 +315,21 @@ var SampleInteractions = {
         });
 
         // back to all samples view
-        $el_back.on( 'click', function( e ) {
+        $el_back.off( 'click' ).on( 'click', function( e ) {
             e.preventDefault();
             $( '.one-sample' ).hide();
             $( '.multi-samples' ).show();
             MultiSamples.set_defaults_samples();
         });
 
-        $el_export.on( 'click', function( e ) {
+        // export samples in the workspace
+        $el_export.off( 'click' ).on( 'click', function( e ) {
             e.preventDefault();
             self.export_results();
         });
 
-        $el_all_interactions.on( 'click', function( e ) {
+        // check all interactions
+        $el_all_interactions.off( 'click' ).on( 'click', function( e ) {
             var $el_interactions_checked = $( '.rna-interaction' ),
                 checkall_status = $( this )[ 0 ].checked;
             _.each( $el_interactions_checked, function( item ) {
@@ -330,25 +337,29 @@ var SampleInteractions = {
             });
         });
         
-        $el_reset.on( 'click', function( e ) {
+        // reset the form UI elements
+        $el_reset.off( 'click' ).on( 'click', function( e ) {
             e.preventDefault();
             self.set_defaults();
-        });
-        
+            self.show_data( "" );
+        }); 
     },
 
     /** Export as tab separated file */
     export_results: function() {
         var tsv_data = "",
-            link = document.createElement('a')
+            link = document.createElement( 'a' ),
+            file_name = Date.now().toString( 16 ) + '_results.tsv';
+        // add headers to the tsv file
+        tsv_data = this.headers.join("\t") + "\n";
         _.each( this.current_results, function( item ) {
             tsv_data = tsv_data + item.join("\t") + "\n";
         });
-        tsv_data = window.encodeURIComponent(tsv_data);
-        link.setAttribute('href', 'data:application/octet-stream,' + tsv_data);
-        link.setAttribute('download', Date.now().toString(16) + '_results.tsv');
-        document.body.appendChild(link);
-        link.click();
+        tsv_data = window.encodeURIComponent( tsv_data );
+        link.setAttribute( 'href', 'data:application/octet-stream,' + tsv_data );
+        link.setAttribute( 'download', file_name );
+        document.body.appendChild( link );
+        link_click = link.click();
     },
 
     /** Register client-side events */
@@ -356,12 +367,12 @@ var SampleInteractions = {
         var self = this,
             $el_rna_pair = $( '.rna-pair' );
         // highlight the transaction pair
-        $el_rna_pair.on( 'mouseenter', function() {
+        $el_rna_pair.off( 'mouseenter' ).on( 'mouseenter', function() {
             $( this ).addClass( 'pair-mouseenter' );
         });
 
         // remove the highlighted background on focus remove
-        $el_rna_pair.on( 'mouseleave', function() {
+        $el_rna_pair.off( 'mouseleave' ).on( 'mouseleave', function() {
             $( this ).removeClass( 'pair-mouseenter' );
         });
     },
@@ -378,6 +389,7 @@ var SampleInteractions = {
         // clear old charts
         $( '#rna-type1' ).empty();
         $( '#rna-type2' ).empty();
+        $( '.check-all-interactions' )[ 0 ].checked = false;
         $el_loading.show();
         // pull all the data
 	$.get( url, function( result ) {
@@ -389,8 +401,11 @@ var SampleInteractions = {
                 _.each(records, function( record ) {
                     rna_records.push( JSON.parse( record ) );
                 });
-                self.current_results = rna_records;
-                self.build_left_panel( rna_records );
+                // extract headers or column names
+                self.headers = rna_records[ 0 ];
+                // save only the data records
+                self.current_results = rna_records.slice( 1, );
+                self.build_left_panel( self.current_results );
             }
             else {
                 $( '.transcriptions-ids' ).html( "<div> No results found. </div>" );
@@ -398,6 +413,12 @@ var SampleInteractions = {
             }
             $el_loading.hide();
 	});
+    },
+
+    /** Make template for interactions for the selected sample */
+    _templateRNAInteractions: function( record ) {
+        return '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" class="rna-interaction" />' +
+               '<span>' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
     }
 };
 

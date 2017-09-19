@@ -147,3 +147,7 @@ body {
 .rna-footer {
     margin-left: 45%;
 }
+
+.rna-footer a {
+    color: black;
+}

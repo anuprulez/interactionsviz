@@ -32,9 +32,9 @@ class RNAInteraction:
     @classmethod
     def make_samples( self, file_path ):
         """ Take out records for multiple samples """
-        interactions_dataframe = pd.read_table( file_path, sep='\t', header=0)
+        interactions_dataframe = pd.read_table( file_path, sep='\t', header=0 )
         # random sampling
-        interactions_dataframe = interactions_dataframe.sample(frac=1).reset_index(drop=True)
+        interactions_dataframe = interactions_dataframe.sample( frac=1 ).reset_index( drop=True )
         size_each_file = len(interactions_dataframe) / self.number_samples
         for sample_number in xrange( 0, self.number_samples ):
             fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
@@ -103,7 +103,7 @@ class RNAInteraction:
     @classmethod
     def read_from_file( self, file_path, how_many=1000 ):
         """ Select data for the first load """
-        return self.read_hdf_sample( file_path )[ :how_many ]
+        return self.read_hdf_sample( file_path )
         
     @classmethod
     def search_data( self, file_path, search_query, how_many=1000 ):
@@ -204,6 +204,7 @@ if __name__ == "__main__":
                 sample_name = params[ 'sample_name' ][ 0 ]
                 filtered_data = data.filter_data( sample_name, params )
                 if not filtered_data.empty:
+                    content = json.dumps( list(filtered_data.columns) ) + '\n'
                     for index, row in filtered_data.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
                 else:
@@ -217,6 +218,7 @@ if __name__ == "__main__":
                 else:
                     results = data.read_from_file( sample_name )
                 if not results.empty:
+                    content = json.dumps( list(results.columns) ) + '\n'
                     for index, row in results.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
                 else:
