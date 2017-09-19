@@ -179,12 +179,10 @@ var SampleInteractions = {
         _.each( records, function( record ) {
             template = template + self._templateRNAInteractions( record );
         });
-        var promise = Promise.resolve( $el_transcriptions_ids.html( template ) );
-        promise.then(function() {
-            build_fancy_scroll( 'transcriptions-ids', 'black' );
-            $el_transcriptions_ids.show();
-            self.register_events();
-        });
+        $el_transcriptions_ids.html( template );
+        build_fancy_scroll( 'transcriptions-ids', 'black' );
+        $el_transcriptions_ids.show();
+        self.register_events();
     },
 
     /** Plot pie charts for interactions chosen for summary */
