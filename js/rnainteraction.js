@@ -182,14 +182,14 @@ var SampleInteractions = {
         $el_transcriptions_ids.html( template );
         build_fancy_scroll( 'transcriptions-ids', 'black' );
         $el_transcriptions_ids.show();
-        self.register_events();
+        self.register_events( self );
     },
 
     /** Plot pie charts for interactions chosen for summary */
     plot_summary_charts: function( dict, container, name ) {
         var layout = {
             height:350,
-            width: 550,
+            width: 500,
             title: name
         },
         labels = [],
@@ -232,9 +232,6 @@ var SampleInteractions = {
                     self.show_data( query );
                 }
             }
-            else if ( query.length === 0 ) {
-                //self.show_data( "" );
-            }
             else {
                 return false;
             }
@@ -261,10 +258,6 @@ var SampleInteractions = {
             var query = $( this )[ 0 ].value,
                 filter_type = "",
                 filter_operator = "";
-            // For no query, just build left panel with complete data
-            if ( !query ) {
-                //self.show_data( "" );
-            }
             if( e.which === 13 ) { // search on enter click
                 filter_type = $el_filter.find( ":selected" ).val();
                 filter_operator = $el_filter_operator.find( ":selected" ).val();
@@ -307,6 +300,8 @@ var SampleInteractions = {
                 summary_result_type1[ summary_items[ i ][ 8 ] ] = ( summary_result_type1[ summary_items[ i ][ 8 ] ] || 0 ) + 1;
                 summary_result_type2[ summary_items[ i ][ 9 ] ] = ( summary_result_type2[ summary_items[ i ][ 9 ] ] || 0 ) + 1;
             }
+            $( "#rna-type1" ).empty();
+            $( "#rna-type2" ).empty();
             // plot the summary as pie charts
             self.plot_summary_charts( summary_result_type1, "rna-type1", 'Gene 1 family distribution' );
             self.plot_summary_charts( summary_result_type2, "rna-type2", 'Gene 2 family distribution' );
@@ -361,9 +356,10 @@ var SampleInteractions = {
     },
 
     /** Register client-side events */
-    register_events: function() {
-        var self = this,
-            $el_rna_pair = $( '.rna-pair' );
+    register_events: function( _this ) {
+        var self = _this,
+            $el_rna_pair = $( '.rna-pair' ),
+            $el_rna_interaction = $( '.rna-pair-interaction' );
         // highlight the transaction pair
         $el_rna_pair.off( 'mouseenter' ).on( 'mouseenter', function() {
             $( this ).addClass( 'pair-mouseenter' );
@@ -373,6 +369,45 @@ var SampleInteractions = {
         $el_rna_pair.off( 'mouseleave' ).on( 'mouseleave', function() {
             $( this ).removeClass( 'pair-mouseenter' );
         });
+
+        // fire when one interaction is selected
+        $el_rna_interaction.off( 'click' ).on( 'click', function( e ) {
+            e.preventDefault();
+            e.stopPropagation();
+            var interaction_id = $( this ).siblings()[ 0 ].id,
+                records = self.current_results;
+            for( var ctr = 0, len = records.length; ctr < len; ctr++ ) {
+                var item = records[ ctr ];
+                if( item[ 0 ] === interaction_id ) {
+                    self.build_information( item );
+                    break;
+                }
+            }
+        });
+    },
+
+    /** Make information list of the selected interaction */
+    build_information: function( item ) {
+        var self = this,
+            $el_first_gene = $( "#rna-type1" ),
+            $el_second_gene = $( "#rna-type2" ),
+            template_gene1 = "",
+            template_gene2 = "";
+        $el_first_gene.empty().append( self._templateInformation( item, "info-gene1", 0 ) );
+        $el_second_gene.empty().append( self._templateInformation( item, "info-gene2", 1 ) );
+    },
+
+    /** Template for showing information of the selected interaction */
+    _templateInformation: function( item, id, file_pos, header_text ) {
+        return '<div id="'+ id +'">' +
+	           '<ul>' +
+	               '<li><p>Geneid: <b>' + item[ 4 + file_pos ] + '</b></p></li>' +
+	               '<li><p>Symbol: <b>' + item[ 6 + file_pos ] + '</b></p></li>' +
+	               '<li><p>Type: <b>' + item[ 8 + file_pos ] + '</b></p></li>' +
+	               '<li><p>Score'+ (file_pos + 1) +': <b>' + item[ 16 + file_pos ] + '</b></p></li>' +
+                       '<li><p>Score: <b>' + item[ 18 ] + '</b></p></li>' +
+	            '</ul>' +
+	        '</div>';
     },
 
     /** Show data in the left panel */
@@ -416,7 +451,7 @@ var SampleInteractions = {
     /** Make template for interactions for the selected sample */
     _templateRNAInteractions: function( record ) {
         return '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" class="rna-interaction" />' +
-               '<span>' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
+               '<span class="rna-pair-interaction">' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
     }
 };
 
