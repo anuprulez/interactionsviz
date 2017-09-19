@@ -139,8 +139,8 @@ var MultiSamples = {
     /**Make template for the list of samples */
     _templateSamples: function( sample ) {
         return '<div class="sample"><input class="file-sample-checkbox" type="checkbox" id="'+ sample + '"' +
-               'value="" title="Check one or more and click on summary." /><label class="file-sample" id="'+ sample + '"' +
-               'for="'+ sample +'" title="Click to see all interactions for this sample">' + sample + '</label></div>';
+               'value="" title="Check one or more and click on summary." /><span id="'+ sample + '" class="file-sample"' +
+               'title="Click to see all interactions for this sample">' + sample + '</span></div>';
     }
 };
 
@@ -180,9 +180,21 @@ var SampleInteractions = {
     build_left_panel: function( records ) {
         var template = "",
             self = this,
-            $el_transcriptions_ids = $( '.transcriptions-ids' );
+            $el_transcriptions_ids = $( '.transcriptions-ids' ),
+            records_size_text = "";
+ 
+        // show how many records being shown
+        if( records.length >= self.to_show ) {
+            records_size_text = "Showing <b>" + self.to_show + "</b> interactions of <b>" + records.length + "</b>";
+        }
+        else {
+            records_size_text = "Showing only <b>" + records.length + " </b>interactions";
+        }
+        $( ".sample-current-size" ).empty().html( records_size_text );
+
         // take only the data records and not headers
         records = records.slice( 0, self.to_show );
+
         _.each( records, function( record ) {
             template = template + self._templateRNAInteractions( record );
         });
@@ -309,6 +321,9 @@ var SampleInteractions = {
                 }
             });
             checked_ids = checked_ids.split( "," );
+            if( checked_ids && checked_ids[ 0 ] === "" ) {
+                return;
+            }
             for(var ctr_ids = 0; ctr_ids < checked_ids.length; ctr_ids++) {
                 for(var ctr = 0; ctr < current_results_length; ctr++) {
                     var item = self.current_results[ ctr ];
@@ -442,6 +457,7 @@ var SampleInteractions = {
         // reset the elements
         self.make_summary_empty();
         $( '.check-all-interactions' )[ 0 ].checked = false;
+        $( ".sample-current-size" ).empty();
         $el_loading.show();
         // pull all the data
 	$.get( url, function( result ) {
@@ -497,6 +513,7 @@ $(document).ready(function() {
         window.location.reload();
     });
 });
+
 
 
 

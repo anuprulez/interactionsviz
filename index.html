@@ -39,7 +39,7 @@
   <div class="row">
     <div class="col-sm-5">
       <input id="check_all" type="checkbox" class="check-all-samples" value="false" title="Check all" />
-      <label for="check_all">Check all</label>
+      <span>Check all</span>
       <button type="button" class="sample-summary btn btn-primary btn-rna" title="Summary">
           Summary
       </button>
@@ -51,7 +51,9 @@
 
 <div class="container one-sample">
   <div class="row">
-    <div class="col-sm-2 sample-name elem-width">
+    <div class="col-sm-2 elem-width">
+       <div class="sample-name"></div>
+       <div class="sample-current-size"></div>
     </div>
     <div class="col-sm-2 elem-width">
       <input type="text" class="search-gene elem-width form-control" value="" placeholder="Search..." title="Search">
@@ -100,7 +102,7 @@
   <div class="row">
     <div class="col-sm-10">
       <input id="check_all_interactions" type="checkbox" class="check-all-interactions" value="false" title="Check all" />
-      <label for="check_all">Check all</label>
+      <span>Check all</span>
       <button type="button" class="rna-summary btn btn-primary btn-rna" title="Get summary of RNA-RNA interactions">
           Summary
       </button>

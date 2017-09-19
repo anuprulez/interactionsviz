@@ -95,6 +95,11 @@ body {
 .sample:hover {
     background-color: #337ab7;
     color: white;
+    font-weight: bold;
+}
+
+.sample-current-size {
+    font-size: 8pt;
 }
 
 .filter-operator, .matrix-loading {
@@ -125,6 +130,7 @@ body {
     background-color: #337ab7;
     color: white;
     cursor: pointer;
+    font-weight: bold;
 }
 
 .btn-rna {
