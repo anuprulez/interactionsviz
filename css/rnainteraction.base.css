@@ -14,7 +14,9 @@ body {
     margin: 0px -90px 0px -90px;
 }
 
-.one-sample, .loading-samples, .sample-ids {
+.one-sample,
+.loading-samples,
+.sample-ids {
     display: none;
 }
 
@@ -30,7 +32,8 @@ body {
     margin-top: 0.5%;
 }
 
-.samples-container, .rna-transcriptions-container {
+.samples-container,
+.rna-transcriptions-container {
     padding-left: 0;
     height: 100%;
     border-right: 1px solid black;

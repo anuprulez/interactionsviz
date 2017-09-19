@@ -1,8 +1,26 @@
-// For all samples. Load the intial view
+
+function build_fancy_scroll( class_name, color ) {
+    $( '.' + class_name ).mCustomScrollbar({
+            theme:"minimal"
+        });
+    $( '.' + class_name + ' .mCSB_dragger_bar' ).css( 'background-color', color );
+}
+
+
+// For all samples. Load the first view
 var MultiSamples = {
 
     host: window.location.hostname,
     port: window.location.port,
+
+    set_defaults_samples: function() {
+        var $el_sample_cheboxes = $( '.file-sample-checkbox' );
+        $( '.check-all-samples' )[ 0 ].checked = false;
+        $( '#samples-plot' ).empty();
+        _.each( $el_sample_cheboxes, function( item ) {
+            item.checked = false;
+        });
+    },
 
     // make list of all samples
     build_samples_list: function( samples ) {
@@ -10,12 +28,11 @@ var MultiSamples = {
             self = this,
             $el_samples = $( '.sample-ids' );
         _.each( samples, function( sample ) {
-            sample = sample.trim();
-            template = template + '<div class="sample"><input class="file-sample-checkbox" type="checkbox" id="'+ sample + '"' +
-                       'value="" title="Check one or more and click on summary." />' + '<label class="file-sample" id="'+ sample + '"' +
-                       'for="'+ sample +'" title="Click to see all interactions for this sample">' + sample + '</label></div>';
+            template = template + self._templateSamples( sample.trim() );
         });
         $el_samples.html( template );
+        // add fancy scroll bar
+        build_fancy_scroll( 'sample-ids', 'black' );
         $( '.multi-samples' ).show();
         $( '.one-sample' ).hide();
     },
@@ -119,6 +136,13 @@ var MultiSamples = {
                 item.checked = checkall_status ? true : false;
             });
         });
+    },
+
+    /**Make template for the list of samples */
+    _templateSamples: function( sample ) {
+        return '<div class="sample"><input class="file-sample-checkbox" type="checkbox" id="'+ sample + '"' +
+               'value="" title="Check one or more and click on summary." /><label class="file-sample" id="'+ sample + '"' +
+               'for="'+ sample +'" title="Click to see all interactions for this sample">' + sample + '</label></div>';
     }
 };
 
@@ -142,15 +166,6 @@ var SampleInteractions = {
         $( '.filter-value' )[ 0 ].value = "";
         $( '.check-all-interactions' )[ 0 ].checked = false;
     },
-    
-    /** Build fancy scroll for the interactions */
-    build_fancy_scroll: function() {
-        // add fancy scroll bar
-        $( '.transcriptions-ids' ).mCustomScrollbar({
-            theme:"minimal"
-        });
-        $( '.transcriptions-ids .mCSB_dragger_bar' ).css( 'background-color', 'black' );
-    },
 
     /** Build the left panel */ 
     build_left_panel: function( records ) {
@@ -162,7 +177,7 @@ var SampleInteractions = {
                        '<span>' + record[ 2 ] + '-' + record[ 3 ]  + '</span></div>';
         });
         $el_transcriptions_ids.html( template );
-        self.build_fancy_scroll();
+        build_fancy_scroll( 'transcriptions-ids', 'black' );
         $el_transcriptions_ids.show();
         self.register_events();
     },
@@ -297,9 +312,9 @@ var SampleInteractions = {
         // back to all samples view
         $el_back.on( 'click', function( e ) {
             e.preventDefault();
-            $( '.multi-samples' ).show();
             $( '.one-sample' ).hide();
-            //window.location.reload();
+            $( '.multi-samples' ).show();
+            MultiSamples.set_defaults_samples();
         });
 
         $el_export.on( 'click', function( e ) {
@@ -387,12 +402,9 @@ var SampleInteractions = {
 };
 
 $(document).ready(function() {
-    // reset the select all checkbox
-    $( '.check-all-samples' )[ 0 ].checked = false;
-
     // Fetch all samples
     MultiSamples.get_samples();
-
+    MultiSamples.set_defaults_samples();
     // reload the app on header click
     $( '.rna-header' ).on('click', function( e ) {
         e.preventDefault();
