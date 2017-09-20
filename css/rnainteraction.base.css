@@ -61,7 +61,7 @@ body {
 }
 
 .rna-results {
-    height: 71.5%;
+    height: 72%;
     margin-top: 1%;
     border-top: 1px solid black;
     border-bottom: 1px solid black;
@@ -136,7 +136,7 @@ body {
 .btn-rna {
     font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
     font-size: 9pt;
-    margin-top: 1%;
+    margin: 0.5% 0 0 0.3%;
 }
 
 .sample-summary {

@@ -22,9 +22,9 @@ var HeaderView = Backbone.View.extend ({
         window.location.reload();
     },
     
-    //Like the Hello TutorialsPoint in this case.
     render: function() {
-       this.$el.append( this._templateHeader() );
+       var self = this;
+       self.$el.append( self._templateHeader() );
     },
 
     _templateHeader: function() {
@@ -62,7 +62,7 @@ var AllSamplesView = Backbone.View.extend ({
         });
     },
 
-    // pull all the samples
+    /** Fetch all the samples */
     getSamples: function() {
         var self = this,
             url = "http://" + self.host + ":" + self.port + "/?multisamples=true";
@@ -141,13 +141,10 @@ var AllSamplesView = Backbone.View.extend ({
         var self = this,
             options = { 'sampleName': e.target.id },
             interactionsView = null;
-        self.$( '.one-sample' ).remove();
-        interactionsView = new InteractionsView( options );
         self.$( '.multi-samples' ).hide();
-        self.$( '.one-sample' ).show();
+        interactionsView = new InteractionsView( options );
     },
     
-    //Like the Hello TutorialsPoint in this case.
     render: function() {
        this.$el.append( this._templateAllSamples() );
        this.getSamples();
@@ -205,20 +202,58 @@ var InteractionsView = Backbone.View.extend ({
     },
 
     events: {
-        'click .search-gene': 'searchGene',
-        'change .rna-sort': 'sortInteractions',
-        'change .rna-filter': 'filterInteractions',
-        'keyup .filter-value': 'setFilterValue',
         'click .rna-summary': 'getInteractionsSummary',
         'click .back-samples': 'backToAllSamples',
-        'click .check-all-interactions': 'checkAllInteractions',
-        'click .export-results': 'exportInteractions',
-        'click .reset-filters': 'resetFilters'
+        'click .check-all-interactions': 'checkAllInteractions'
     },
     
     render: function( options ) {
-       this.$el.append( this._templateInteractions( options ) );
-       this.showInteractions( "" );
+       var self = this;
+       self.$( '.one-sample' ).remove();
+       self.$el.append( self._templateInteractions( options ) );
+       self.$( '.one-sample' ).show();
+       self.registerPageEvents();
+       self.showInteractions( "" );
+    },
+
+    /** Register events for the page elements */
+    registerPageEvents: function() {
+        var self = this,
+            $el_search_gene = self.$( '.search-gene' ),
+            $el_sort = self.$( '.rna-sort' ),
+            $el_filter = self.$( '.rna-filter' ),
+            $el_filter_val = self.$( '.filter-value' ),
+            $el_export = self.$( '.export-results' ),
+            $el_reset_filters = self.$( '.reset-filters' );
+
+        // search query event
+        $el_search_gene.off( 'keyup' ).on( 'keyup', function( e ) {
+            self.searchGene( e );
+        });
+
+        // onchange for sort
+        $el_sort.off( 'change' ).on( 'change', function( e ) {
+            self.sortInteractions( e );
+        });
+
+        // onchange for filter
+        $el_filter.off( 'change' ).on( 'change', function( e ) {
+            self.filterInteractions( e );
+        });
+
+        // fetch records using filter's value
+        $el_filter_val.off( 'keyup' ).on( 'keyup', function( e ) {
+            self.setFilterValue( e );
+        });
+
+        // export samples in the workspace
+        $el_export.off( 'click' ).on( 'click', function( e ) {
+            self.exportInteractions( e );
+        });
+
+        $el_reset_filters.off( 'click' ).on( 'click', function( e ) {
+            self.resetFilters( e );
+        })
     },
 
     searchGene: function( e ) {
@@ -576,17 +611,18 @@ var InteractionsView = Backbone.View.extend ({
                            '<input id="check_all_interactions" type="checkbox" class="check-all-interactions"' +
                                'value="false" title="Check all" />' +
                            '<span>Check all</span>' +
-		           '<button type="button" class="rna-summary btn btn-primary btn-rna" title="Get summary of RNA-RNA interactions">' +
+		           '<button type="button" class="rna-summary btn btn-primary btn-rna btn-interaction" title="Get summary of RNA-RNA interactions">' +
 			       'Summary' +
 		           '</button>' +
-		           '<button type="button" class="export-results btn btn-primary btn-rna" title="Export results as tab-separated file">' +
+		           '<button type="button" class="export-results btn btn-primary btn-rna btn-interaction"' +
+                               'title="Export results as tab-separated file">' +
 			       'Export' +
 		           '</button>' +
-		           '<button type="button" class="reset-filters btn btn-primary btn-rna"' +
+		           '<button type="button" class="reset-filters btn btn-primary btn-rna btn-interaction"' +
                                   'title="Reset all the filters and reload original interactions">' +
 			      'Reset filters' +
 		           '</button>' +
-		           '<button type="button" class="back-samples btn btn-primary btn-rna" title="Back to all samples">' +
+		           '<button type="button" class="back-samples btn btn-primary btn-rna btn-interaction" title="Back to all samples">' +
 			      'Back' +
 		           '</button>' +
                        '</div>' +
