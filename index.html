@@ -6,127 +6,21 @@
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/underscore.min.js"></script>
+    <script src="js/backbone-min.js"></script>
     <script src="js/plotly.min.js"></script>
     <script src="js/jquery.mCustomScrollbar.concat.min.js"></script>
   </head>
   <body>
-
-<div class="container">
-  <div class="row rna-header-row">
-    <div class="col-sm-12 rna-header">
-       <h3>RNA-RNA Interactions</h3>
+    <div class="main-container">
+        <div class="samples-overlay loader"></div>
     </div>
-  </div>
-</div>
-<div class="container multi-samples">
-  <div class="row samples">
-    <div class="samples-overlay loader"></div>
-    <div class="col-sm-2 samples-container">
-      <div class="loading-samples">
-	loading samples...
-      </div>
-      <div class="sample-ids">
-      </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="rna-footer"> <a href="http://www.bioinf.uni-freiburg.de/" target="_blank" >Bioinformatics Group, Freiburg  </a></div>
+            </div>
+        </div>
     </div>
-    <div class="col-sm-10">
-      <div class="matrix-loading loader">
-        <div> Loading results. Please wait. It might take a few minutes... </div>
-      </div>
-      <div id="samples-plot">
-      </div>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-sm-5">
-      <input id="check_all" type="checkbox" class="check-all-samples" value="false" title="Check all" />
-      <span>Check all</span>
-      <button type="button" class="sample-summary btn btn-primary btn-rna" title="Summary">
-          Summary
-      </button>
-    </div>
-    <div class="col-sm-7">
-    </div>
-  </div>
-</div>
-
-<div class="container one-sample">
-  <div class="row">
-    <div class="col-sm-2 elem-width">
-       <div class="sample-name"></div>
-       <div class="sample-current-size"></div>
-    </div>
-    <div class="col-sm-2 elem-width">
-      <input type="text" class="search-gene elem-width form-control" value="" placeholder="Search..." title="Search">
-    </div>
-    <div class="col-sm-2 elem-width">
-      <select name="sort" class="rna-sort elem-width form-control" title="Sort">
-        <option value="">Sort by...</option>
-	<option value="score" selected>Score</option>
-      </select>
-    </div>
-    <div class="col-sm-6 elem-width">
-      <select name="filter" class="rna-filter form-control" title="Filter">
-        <option value="-1">Filter by...</option>
-	<option value="score">Score</option>
-	<option value="family">RNA Family</option>
-      </select>
-      <select name="filter-operator" class="filter-operator form-control" title="Filter operator">
-        <option value="-1">Choose operator...</option>
-	<option value="equal">=</option>
-	<option value="greaterthan">></option>
-        <option value="lessthan"><</option>
-        <option value="lessthanequal"><=</option>
-        <option value="greaterthanequal">>=</option>
-        <option value="notequalto"><></option>
-      </select>
-      <input type="text" class="filter-value form-control" title="Enter the selected filter's value" value="" placeholder="Enter the selected filter's value..." />
-    </div>
-  </div>
-  <div class="row rna-results">
-    <div class="col-sm-2 rna-transcriptions-container">
-      <div class="loading">
-	loading results...
-      </div>
-      <div class="transcriptions-ids">
-      </div>
-    </div>
-    <div class="col-sm-5 first-gene">
-      <div id="rna-type1"></div>
-      <div id="rna-score1"></div>
-    </div>
-    <div class="col-sm-5 second-gene">
-      <div id="rna-type2"></div>
-      <div id="rna-score2"></div>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-sm-10">
-      <input id="check_all_interactions" type="checkbox" class="check-all-interactions" value="false" title="Check all" />
-      <span>Check all</span>
-      <button type="button" class="rna-summary btn btn-primary btn-rna" title="Get summary of RNA-RNA interactions">
-          Summary
-      </button>
-      <button type="button" class="export-results btn btn-primary btn-rna" title="Export results as tab-separated file">
-          Export
-      </button>
-      <button type="button" class="reset-filters btn btn-primary btn-rna" title="Reset all the filters and reload original interactions">
-          Reset filters
-      </button>
-      <button type="button" class="back-samples btn btn-primary btn-rna" title="Back to all samples">
-          Back
-      </button>
-    </div>
-    <div class="col-sm-2">
-    </div>
-  </div>
-</div>
-<div class="container">
-  <div class="row">
-    <div class="col-sm-12">
-       <div class="rna-footer"> <a href="http://www.bioinf.uni-freiburg.de/" target="_blank" >Bioinformatics Group, Freiburg  </a></div>
-    </div>
-  </div>
-</div>
     <script src="js/rnainteraction.js"></script>
   </body>
 </html>

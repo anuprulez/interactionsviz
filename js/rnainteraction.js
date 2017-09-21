@@ -1,67 +1,130 @@
-
-function build_fancy_scroll( class_name ) {
+function createFancyScroll( class_name ) {
     $( '.' + class_name ).mCustomScrollbar({
             theme:"minimal"
         });
     $( '.' + class_name + ' .mCSB_dragger_bar' ).css( 'background-color', 'black' );
 }
 
+var HeaderView = Backbone.View.extend ({
+    el: ".main-container",
 
-// For all samples. Load the first view
-var MultiSamples = {
+    initialize: function() {
+       this.headerText = "RNA-RNA Interactions";
+       this.render();
+    },
 
-    host: window.location.hostname,
-    port: window.location.port,
+    events: {
+        'click .rna-header': 'headerClick'
+    },
 
-    set_defaults_samples: function() {
-        var $el_sample_cheboxes = $( '.file-sample-checkbox' );
-        $( '.check-all-samples' )[ 0 ].checked = false;
-        $( '#samples-plot' ).empty();
+    headerClick: function( e ) {
+        e.preventDefault();
+        window.location.reload();
+    },
+    
+    render: function() {
+       var self = this;
+       self.$el.append( self._templateHeader() );
+    },
+
+    _templateHeader: function() {
+        return '<div class="container">' +
+                   '<div class="row rna-header-row">' +
+                       '<div class="col-sm-12 rna-header">' +
+                           '<h3>'+ this.headerText +'</h3>' +
+                       '</div>' +
+                    '</div>' +
+                '</div>';
+    }
+});
+
+var AllSamplesView = Backbone.View.extend ({
+    el: ".main-container",
+
+    initialize: function() {
+       this.host = window.location.hostname;
+       this.port = window.location.port;
+       this.overlay = this.$( '.loader' );
+       this.render();
+    },
+
+    events: {
+        'click .sample-summary': 'makeSummary',
+        'click .file-sample': 'getSampleInteractions',
+        'click .check-all-samples': 'selectAllSamples'
+    },
+
+    selectAllSamples: function( e ) {
+        var self = this,
+            $el_sample_checkboxes = self.$( '.file-sample-checkbox' ),
+            checked_status = e.target.checked;
+        _.each( $el_sample_checkboxes, function( item ) {
+            item.checked = checked_status ? true : false;
+        });
+    },
+
+    /** Set all the elements to their default values */
+    setToDefaults: function() {
+        var self = this,
+            $el_sample_cheboxes = self.$( '.file-sample-checkbox' );
+        self.$( '.check-all-samples' )[ 0 ].checked = false;
+        self.$( '#samples-plot' ).empty();
         _.each( $el_sample_cheboxes, function( item ) {
             item.checked = false;
         });
     },
 
-    // make list of all samples
-    build_samples_list: function( samples ) {
+    /** Fetch all the samples */
+    getSamples: function() {
+        var self = this,
+            url = "http://" + self.host + ":" + self.port + "/?multisamples=true",
+            $el_samples_loader = self.$( '.samples-loader' );
+        self.overlay.show();
+        $el_samples_loader.show();
+        $.get( url, function( samples ) {
+            samples = samples.split( "\n" );
+            self.createSamplesList( samples );
+            self.overlay.hide();
+            $el_samples_loader.hide();
+            self.$( '.sample-ids' ).show();
+        });
+    },
+
+    /** Make list of all samples */
+    createSamplesList: function( samples ) {
         var template = "",
             self = this,
-            $el_samples = $( '.sample-ids' );
+            $el_samples = self.$( '.sample-ids' );
         _.each( samples, function( sample ) {
-            template = template + self._templateSamples( sample.trim() );
+            template = template + self._templateSample( sample.trim() );
         });
         $el_samples.html( template );
         // add fancy scroll bar
-        build_fancy_scroll( 'sample-ids' );
-        $( '.multi-samples' ).show();
-        $( '.one-sample' ).hide();
+        createFancyScroll( 'sample-ids' );
+        self.$( '.multi-samples' ).show();
+        self.$( '.one-sample' ).hide();
     },
 
-    // pull all the samples
-    get_samples: function() {
+    /** Show summary for selected samples and plot a heatmap */
+    makeSummary: function() {
         var self = this,
-            url = "http://" + self.host + ":" + self.port + "/?multisamples=true";
-        $( '.loading-samples' ).show();
-        $.get( url, function( samples ) {
-            samples = samples.split( "\n" );
-            self.build_samples_list( samples );
-            self.register_events();
-            $( '.loading-samples' ).hide();
-            $( '.sample-ids' ).show();
+            checked_ids = "",
+            checkboxes = self.$( '.file-sample-checkbox' ),
+            url = "",
+            plot_title = "Common interactions among samples";
+        _.each( checkboxes, function( item ) {
+            if( item.checked ) {
+                checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
+            }
         });
-    },
-
-    // show summary for selected samples
-    // and plot a heatmap
-    make_samples_summary: function( checked_ids ) {
-        var self = this;
         if( checked_ids && checked_ids.length > 0 ) {
             var ids = checked_ids.split( "," ),
                 ids_length = ids.length,
-                plot_title = "Common interactions among samples";
+                $el_matrix_loader = self.$( '.matrix-loader' );
             if ( ids.length > 0) {
-                $( '#samples-plot' ).hide();
-                $( '.loader' ).show();
+                self.$( '#samples-plot' ).hide();
+                self.overlay.show();
+                $el_matrix_loader.show();
                 var url = "http://" + self.host + ":" + self.port + "/?sample_ids=" + checked_ids;
                 $.get( url, function( samples ) {
                     samples = samples.split( "\n" ).map( Number );
@@ -84,128 +147,194 @@ var MultiSamples = {
                       title: plot_title
                     };
                     Plotly.newPlot( 'samples-plot', data, layout );
-                    $( '#samples-plot' ).show();
-                    $( '.loader' ).hide();
+                    self.overlay.hide();
+                    $el_matrix_loader.hide();
+                    self.$( '#samples-plot' ).show();
                 });
             }
         }
     },
-
-    // register events for summary and samples
-    register_events: function() {
-        var self = this, 
-            $el_summary = $( '.sample-summary' ),
-            $el_sample = $( '.file-sample' ),
-            $el_check_all = $( '.check-all-samples' );
-
-        // make summary for selected samples
-        $el_summary.off( 'click' ).on( 'click', function( e ) {
-            e.preventDefault();
-            e.stopPropagation();
-            var checked_ids = "",
-                checkboxes = $( '.file-sample-checkbox' ),
-                url = "";
-            _.each( checkboxes, function( item ) {
-                if( item.checked ) {
-                    checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
-                }
-            });
-            self.make_samples_summary( checked_ids.trim() );
-        });
-
-        // event for showing interactions for the selected sample
-        $el_sample.off( 'click' ).on( 'click', function( e ) {
-            e.preventDefault();
-            e.stopPropagation();
-            $( '.multi-samples' ).hide();
-            $( '.one-sample' ).show();
-            SampleInteractions.register_page_events();
-            SampleInteractions.sample_name = $( this )[ 0 ].id;
-            SampleInteractions.show_data( "" );
-            SampleInteractions.set_defaults();
-            $( '.sample-name' ).text( $( this )[ 0 ].id );
-        });
-
-        // event for checking/ unchecking all samples
-        $el_check_all.off( 'click' ).on( 'click', function( e ) {
-            var checkall_status = $( this )[ 0 ].checked,
-                all_samples_checkboxes = $( '.file-sample-checkbox' );
-            _.each( all_samples_checkboxes, function( item ) {
-                item.checked = checkall_status ? true : false;
-            });
-        });
-    },
-
-    /**Make template for the list of samples */
-    _templateSamples: function( sample ) {
-        return '<div class="sample"><input class="file-sample-checkbox" type="checkbox" id="'+ sample + '"' +
-               'value="" title="Check one or more and click on summary." /><span id="'+ sample + '" class="file-sample"' +
-               'title="Click to see all interactions for this sample">' + sample + '</span></div>';
-    }
-};
-
-// For the selected sample. Show all interactions
-// for the selected one with search, sort and filtering features
-var SampleInteractions = {
-
-    min_query_length: 3,
-    host: window.location.hostname,
-    port: window.location.port,
-    sample_name: "",
-    headers: [],
-    current_results: [],
-    to_show: 1000,
-
-    /** Set UI elements to default values */
-    set_defaults: function() {
-        $( '.search-gene' )[ 0 ].value = "";
-        $( '.rna-sort' ).val( "score" );
-        $( '.rna-filter' ).val( "-1" );
-        $( '.filter-operator' ).hide();
-        $( '.filter-operator' ).val( "-1" );
-        $( '.filter-value' )[ 0 ].value = "";
-        $( '.check-all-interactions' )[ 0 ].checked = false;
-        this.make_summary_empty();
-    },
-
-    /** Clear the items in the summary sections */
-    make_summary_empty: function() {
-        $( "#rna-type1" ).empty();
-        $( "#rna-type2" ).empty();
-        $( "#rna-score1" ).empty();
-        $( "#rna-score2" ).empty();
-    },
-
-    /** Build the left panel */ 
-    build_left_panel: function( records ) {
-        var template = "",
-            self = this,
-            $el_transcriptions_ids = $( '.transcriptions-ids' ),
-            records_size_text = "";
  
-        // show how many records being shown
-        if( records.length >= self.to_show ) {
-            records_size_text = "Showing <b>" + self.to_show + "</b> interactions of <b>" + records.length + "</b>";
+    /** Open the interactions view of the selected sample */
+    getSampleInteractions: function( e ) {
+        var self = this,
+            options = { 'sampleName': e.target.id },
+            interactionsView = null;
+        self.$( '.multi-samples' ).hide();
+        interactionsView = new InteractionsView( options );
+    },
+    
+    /** Show all the samples */
+    render: function() {
+       this.$el.append( this._templateAllSamples() );
+       this.getSamples();
+    },
+
+    /** Template for all samples view */
+    _templateAllSamples: function() {
+        return '<div class="container multi-samples">' +
+                   '<div class="row samples">' +
+                       '<div class="col-sm-2 samples-container">' +
+                           '<div class="samples-loader"> Loading samples... </div>' +
+                           '<div class="sample-ids">' +
+                           '</div>' +
+                        '</div>' +
+                        '<div class="col-sm-10">' +
+                            '<div class="matrix-loader">' +
+                                '<div> Loading results. Please wait. It might take a few minutes... </div>' +
+                            '</div>' +
+                            '<div id="samples-plot"></div>' +
+                        '</div>' +
+                   '</div>' +
+                   '<div class="row">' +
+                       '<div class="col-sm-5">' +
+                           '<input id="check_all" type="checkbox" class="check-all-samples" value="false" title="Check all" />' +
+                           '<span>Check all</span>' +
+                           '<button type="button" class="sample-summary btn btn-primary btn-rna" title="Summary"> Summary </button>' +
+                       '</div>' +
+                       '<div class="col-sm-7"></div>' +
+                   '</div>' +
+               '</div>';
+    },
+ 
+    /**Make template for the list of samples */
+    _templateSample: function( sample ) {
+        return '<div class="sample">' +
+                   '<input class="file-sample-checkbox" type="checkbox" id="'+ sample + '"' +
+                       'value="" title="Check one or more and click on summary." />' +
+                    '<span id="'+ sample + '" class="file-sample"' +
+                       'title="Click to see all interactions for this sample">' + sample + '</span></div>';
+    }
+});
+
+var InteractionsView = Backbone.View.extend ({
+    el: ".main-container",
+
+    initialize: function( options ) {
+       this.host = window.location.hostname;
+       this.port = window.location.port;
+       this.minQueryLength = 3;
+       this.modelHeaders = [];
+       this.model = [];
+       this.sampleName = options.sampleName;
+       this.toShow = 1000;
+       this.overlay = this.$( '.loader' );
+       this.render( options );
+    },
+
+    events: {
+        'click .rna-summary': 'getInteractionsSummary',
+        'click .back-samples': 'backToAllSamples',
+        'click .check-all-interactions': 'checkAllInteractions'
+    },
+    
+    render: function( options ) {
+       var self = this;
+       self.$( '.one-sample' ).remove();
+       self.$el.append( self._templateInteractions( options ) );
+       self.$( '.one-sample' ).show();
+       self.registerPageEvents();
+       self.showInteractions( "" );
+    },
+
+    /** Register events for the page elements */
+    registerPageEvents: function() {
+        var self = this,
+            $el_search_gene = self.$( '.search-gene' ),
+            $el_sort = self.$( '.rna-sort' ),
+            $el_filter = self.$( '.rna-filter' ),
+            $el_filter_val = self.$( '.filter-value' ),
+            $el_export = self.$( '.export-results' ),
+            $el_reset_filters = self.$( '.reset-filters' );
+
+        // search query event
+        $el_search_gene.off( 'keyup' ).on( 'keyup', function( e ) {
+            self.searchGene( e );
+        });
+
+        // onchange for sort
+        $el_sort.off( 'change' ).on( 'change', function( e ) {
+            self.sortInteractions( e );
+        });
+
+        // onchange for filter
+        $el_filter.off( 'change' ).on( 'change', function( e ) {
+            self.filterInteractions( e );
+        });
+
+        // fetch records using filter's value
+        $el_filter_val.off( 'keyup' ).on( 'keyup', function( e ) {
+            self.setFilterValue( e );
+        });
+
+        // export samples in the workspace
+        $el_export.off( 'click' ).on( 'click', function( e ) {
+            self.exportInteractions( e );
+        });
+
+        // reset the filters
+        $el_reset_filters.off( 'click' ).on( 'click', function( e ) {
+            self.resetFilters( e );
+        });
+    },
+
+    /** Callback for searching interactions */ 
+    searchGene: function( e ) {
+        e.preventDefault();
+        var query = e.target.value,
+            self = this;
+        if( query.length >= self.minQueryLength ) {
+            if( e.which === 13 || e.keyCode == 13 ) {
+                self.showInteractions( query );
+                self.setDefaultFilters();
+            }
         }
         else {
-            records_size_text = "Showing only <b>" + records.length + " </b>interactions";
+            return false;
         }
-        $( ".sample-current-size" ).empty().html( records_size_text );
-
-        // take only the data records and not headers
-        records = records.slice( 0, self.to_show );
-
-        _.each( records, function( record ) {
-            template = template + self._templateRNAInteractions( record );
-        });
-        $el_transcriptions_ids.html( template );
-        build_fancy_scroll( 'transcriptions-ids' );
-        $el_transcriptions_ids.show();
-        self.register_events( self );
     },
 
-    /** Plot pie charts for interactions chosen for summary */
-    plot_summary_charts: function( dict, container, name ) {
+    /** Sort the interactions default by score in descending order */
+    sortInteractions: function( e ) {
+        var self = this;
+        e.preventDefault();
+        self.showInteractions( "" );
+    },
+
+    /** Filter the interactions using filter types */
+    filterInteractions: function( e ) {
+        e.preventDefault();
+        var self = this,
+            value = e.target.value,
+            $el_filter_operator = self.$( '.filter-operator' );
+        // if the selected filter is 'score', show the selectbox for operators
+        value === "score" ? $el_filter_operator.show() : $el_filter_operator.hide();
+    },
+
+    /** Fetch interactions using the filters */
+    setFilterValue: function( e ) {
+        e.preventDefault();
+        var self = this,
+            query = e.target.value,
+            filterType = "",
+            filterOperator = "",
+            $el_filter = self.$( '.rna-filter' ),
+            $el_filter_operator = self.$( '.filter-operator' );
+        if( e.which === 13 ) { // search on enter click
+            filterType = $el_filter.find( ":selected" ).val();
+            filterOperator = $el_filter_operator.find( ":selected" ).val();
+            if ( filterType === "-1" || query === "" ) {
+                return;
+            }
+            var url = "http://" + self.host + ":" + self.port + "/?sample_name="+ self.sampleName +
+                "&filter_type=" + filterType + "&filter_op=" + filterOperator + "&filter_value=" + query;
+            self.showInteractions( "", url );
+            self.$( '.search-gene' )[ 0 ].value = "";
+        }
+    },
+
+    /** Plot pie chart for interactions chosen for summary */
+    plotPieChart: function( dict, container, name ) {
         var layout = {
             height:400,
             width: 500,
@@ -214,7 +343,7 @@ var SampleInteractions = {
         labels = [],
         values = [];
 
-        for( var item in  dict ) {
+        for( var item in dict ) {
             labels.push( item );
             values.push( dict[ item ] ); 
         }
@@ -227,7 +356,8 @@ var SampleInteractions = {
         Plotly.newPlot( container, data, layout );
     },
 
-    plot_histograms: function( data, container, name ) {
+    /** Plot histogram for interactions chosen for summary */
+    plotHistogram: function( data, container, name ) {
 	var trace = {
 	    x: data,
 	    type: 'histogram',
@@ -241,92 +371,33 @@ var SampleInteractions = {
 	Plotly.newPlot( container, plot_data, layout );
     },
 
-    /** Register events for the page elements */
-    register_page_events: function() {
+    /** Fetch the summary data for the selected interactions */
+    getInteractionsSummary: function( e ) {
+        e.preventDefault();
         var self = this,
-            $el_search_gene = $( '.search-gene' ),
-            $el_sort = $( '.rna-sort' ),
-            $el_filter = $( '.rna-filter' ),
-            $el_filter_operator = $( '.filter-operator' ),
-            $el_filter_val = $( '.filter-value' ),
-            $el_summary = $( '.rna-summary' ),
-            $el_back = $( '.back-samples' ),
-            $el_check_all = $( '.check-all-interactions' ),
-            $el_export = $( '.export-results' ),
-            $el_all_interactions = $( '.check-all-interactions' ),
-            $el_reset = $( '.reset-filters' );
-
-        // search query event
-        $el_search_gene.off( 'keyup' ).on( 'keyup', function( e ) {
-            e.preventDefault();
-            var query = $( this )[ 0 ].value;
-            if( query.length >= self.min_query_length ) {
-                if( e.which === 13 ) {
-                    self.show_data( query );
-                }
-            }
-            else {
-                return false;
+            checked_ids = "",
+            checkboxes = self.$( '.rna-interaction' ),
+            summary_items = [],
+            model_length = self.model.length,
+            summary_result_type2 = {},
+            summary_result_score = [],
+            summary_result_score1 = [],
+            summary_result_score2 = [];
+        _.each( checkboxes, function( item ) {
+            if( item.checked ) {
+                checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
             }
         });
-
-        // onchange for sort
-        $el_sort.off( 'change' ).on( 'change', function( e ) {
-            e.preventDefault();
-            self.sort_field = $( this )[ 0 ].value;
-            self.show_data( "" );
-        });
-
-        // onchange for filter
-        $el_filter.off( 'change' ).on( 'change', function( e ) {
-            e.preventDefault();
-            var value = $( this )[ 0 ].value;
-            // if the selected filter is 'score', show the selectbox for operators
-            value === "score" ? $el_filter_operator.show() : $el_filter_operator.hide();
-        });
-
-        // fetch records using filter's value
-        $el_filter_val.off( 'keyup' ).on( 'keyup', function( e ) {
-            e.preventDefault();
-            var query = $( this )[ 0 ].value,
-                filter_type = "",
-                filter_operator = "";
-            if( e.which === 13 ) { // search on enter click
-                filter_type = $el_filter.find( ":selected" ).val();
-                filter_operator = $el_filter_operator.find( ":selected" ).val();
-                if ( filter_type === "-1" || query === "" ) {
-                    return;
-                }
-                var url = "http://" + self.host + ":" + self.port + "/?sample_name="+ SampleInteractions.sample_name +
-                          "&filter_type=" + filter_type + "&filter_op=" + filter_operator + "&filter_value=" + query;
-                self.show_data( "", url );
-            }
-        });
-
-        // click for checkboxes
-        $el_summary.off( 'click' ).on( 'click', function( e ) {
-            e.preventDefault();
-            var checked_ids = "",
-                checkboxes = $( '.rna-interaction' ),
-                url = "",
-                summary_items = [],
-                current_results_length = self.current_results.length,
-                summary_result_type2 = {},
-                summary_result_score = [],
-                summary_result_score1 = [],
-                summary_result_score2 = [];
-            _.each( checkboxes, function( item ) {
-                if( item.checked ) {
-                    checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
-                }
-            });
-            checked_ids = checked_ids.split( "," );
-            if( checked_ids && checked_ids[ 0 ] === "" ) {
-                return;
-            }
-            for(var ctr_ids = 0; ctr_ids < checked_ids.length; ctr_ids++) {
-                for(var ctr = 0; ctr < current_results_length; ctr++) {
-                    var item = self.current_results[ ctr ];
+        checked_ids = checked_ids.split( "," );
+        // if there are no checked interactions, then summary is computed over
+        // server for all the interactions for that sample (or filtered interactions)
+        if( checked_ids && checked_ids[ 0 ] === "" ) {
+            self.fetchSummaryAllInteractions();
+        }
+        else {
+            for( var ctr_ids = 0; ctr_ids < checked_ids.length; ctr_ids++ ) {
+                for( var ctr = 0; ctr < model_length; ctr++ ) {
+                    var item = self.model[ ctr ];
                     if ( checked_ids[ ctr_ids ] === item[ 0 ] ) {
                         summary_items.push( item );
                         break;
@@ -340,60 +411,101 @@ var SampleInteractions = {
                 summary_result_score2.push( summary_items[ i ][ 17 ] );
                 summary_result_score.push( summary_items[ i ][ 18 ] );
             }
+            
+            var plottingData = {
+                'family_names_count': summary_result_type2,
+                'score': summary_result_score,
+                'score1': summary_result_score1,
+                'score2': summary_result_score2
+            };
+            self.cleanSummary();
+            self.plotInteractions( plottingData );
+        }
+    },
 
-            self.make_summary_empty();
- 
-            // build scrolls
-            build_fancy_scroll( "first-gene" );
-            build_fancy_scroll( "second-gene" );
+    /** Send data for summary plotting */
+    plotInteractions: function( data ) {
+        var self = this;
+        // build scrolls
+        createFancyScroll( "first-gene" );
+        createFancyScroll( "second-gene" );
+        // plot the summary as pie charts and histograms
+        self.plotHistogram( data.score, "rna-type1", 'Score distribution for ' + self.sampleName );
+        self.plotPieChart( data.family_names_count, "rna-type2", 'Gene2 RNA family distribution for ' + self.sampleName );
+        self.plotHistogram( data.score1, "rna-score1", 'Score1 distribution for ' + self.sampleName );
+        self.plotHistogram( data.score2, "rna-score2", 'Score2 distribution for ' + self.sampleName );
+    },
 
-            // plot the summary as pie charts and histograms
-            self.plot_histograms( summary_result_score, "rna-type1", 'Score distribution' );
-            self.plot_summary_charts( summary_result_type2, "rna-type2", 'Gene2 family distribution' );
-            self.plot_histograms( summary_result_score1, "rna-score1", 'Score1 distribution' );
-            self.plot_histograms( summary_result_score2, "rna-score2", 'Score2 distribution' );
+    /** Fetch summary data from server */
+    fetchSummaryAllInteractions: function() {
+        var self = this,
+            url = "",
+            queryString = "",
+            $el_search_gene = self.$( '.search-gene' ),
+            $el_filter_type = self.$( '.rna-filter' ),
+            $el_filter_operator = self.$( '.filter-operator' ),
+            $el_filter_value = self.$( '.filter-value' ),
+            filterType = $el_filter_type.find( ":selected" ).val();
+
+        // take into account if the filters are active while fetching 
+        // summary data and build url accordingly
+        if ( $el_search_gene.val() !== "" ) {
+            queryString = "&search_by=" + $el_search_gene.val();
+        }
+        else {
+            if ( filterType !== "-1" ) {
+                var filterOperator = $el_filter_operator.find( ":selected" ).val();
+                var filterValue = self.$( '.filter-value' ).val();
+                queryString = "&filter_type=" + filterType + "&filter_op=" + filterOperator + "&filter_value=" + filterValue;
+            }
+        }
+        url = "http://" + self.host + ":" + self.port + "/?plot_sample_name=" + self.sampleName + queryString;
+        self.cleanSummary();
+        self.$( '#rna-type1' ).append( "<p class='plot-loader'>Loading plots. Please wait...</p>" );
+        self.$( '#rna-type2' ).append( "<p class='plot-loader'>Loading plots. Please wait...</p>" );
+        self.overlay.show();
+        $.get( url, function( data ) {
+            data = data.split( "\n" );
+            var plotData = {
+                family_names_count: JSON.parse( data[ 0 ] ),
+                score: JSON.parse( data[ 1 ] ),
+                score1: JSON.parse( data[ 2 ] ),
+                score2: JSON.parse( data[ 3 ] ),
+            };
+            self.plotInteractions( plotData );
+            self.overlay.hide();
+            self.$( '.plot-loader' ).remove();
         });
+    },
 
-        // back to all samples view
-        $el_back.off( 'click' ).on( 'click', function( e ) {
-            e.preventDefault();
-            $( '.one-sample' ).hide();
-            $( '.multi-samples' ).show();
-            MultiSamples.set_defaults_samples();
-        });
+    /** Back to all samples view */
+    backToAllSamples: function( e ) {
+        e.preventDefault();
+        this.$( '.one-sample' ).hide();
+        this.$( '.multi-samples' ).show();
+        allSamplesView.setToDefaults();
+    },
 
-        // export samples in the workspace
-        $el_export.off( 'click' ).on( 'click', function( e ) {
-            e.preventDefault();
-            self.export_results();
+    /** Select all the interactions in the left panel */
+    checkAllInteractions: function( e ) {
+        var $el_interactions_checked = this.$( '.rna-interaction' ),
+            checkall_status = e.target.checked;
+        _.each( $el_interactions_checked, function( item ) {
+            item.checked = checkall_status ? true : false;
         });
-
-        // check all interactions
-        $el_all_interactions.off( 'click' ).on( 'click', function( e ) {
-            var $el_interactions_checked = $( '.rna-interaction' ),
-                checkall_status = $( this )[ 0 ].checked;
-            _.each( $el_interactions_checked, function( item ) {
-                item.checked = checkall_status ? true : false;
-            });
-        });
-        
-        // reset the form UI elements
-        $el_reset.off( 'click' ).on( 'click', function( e ) {
-            e.preventDefault();
-            self.set_defaults();
-            self.show_data( "" );
-        }); 
     },
 
     /** Export as tab separated file */
-    export_results: function() {
+    exportInteractions: function( e ) {
+        e.preventDefault();
         var tsv_data = "",
             link = document.createElement( 'a' ),
-            file_name = Date.now().toString( 16 ) + '_results.tsv';
+            file_name = Date.now().toString( 16 ) + '_results.tsv',
+            self = this;
         // add headers to the tsv file
-        tsv_data = this.headers.join("\t") + "\n";
-        _.each( this.current_results, function( item ) {
-            tsv_data = tsv_data + item.join("\t") + "\n";
+        tsv_data = self.modelHeaders.join( "\t" ) + "\n";
+        _.each( self.model, function( item ) {
+            tsv_data = tsv_data + item.join( "\t" ) + "\n";
         });
         tsv_data = window.encodeURIComponent( tsv_data );
         link.setAttribute( 'href', 'data:application/octet-stream,' + tsv_data );
@@ -402,11 +514,85 @@ var SampleInteractions = {
         link_click = link.click();
     },
 
-    /** Register client-side events */
-    register_events: function( _this ) {
-        var self = _this,
-            $el_rna_pair = $( '.rna-pair' ),
-            $el_rna_interaction = $( '.rna-pair-interaction' );
+    /** Callback for the reset filter button */
+    resetFilters: function( e ) {
+        e.preventDefault();
+        this.setToDefaults();
+        this.showInteractions( "" );
+    },
+
+    /** Fetch all the interactions for the selected sample */
+    showInteractions: function( search_by, url_text ) {
+        var self = this,
+            url = url_text ? url_text : "http://" + self.host + ":" + self.port +
+                "/?sample_name="+ self.sampleName +"&search=" + search_by,
+            $el_loading = self.$( ".interactions-loader" ),
+            $el_transcriptions_ids_parent = self.$( '.rna-transcriptions-container' );
+        self.$( '.transcriptions-ids' ).remove();
+        // reset the elements
+        self.cleanSummary();
+        self.$( '.check-all-interactions' )[ 0 ].checked = false;
+        self.$( ".sample-current-size" ).empty();
+        $el_loading.show();
+        self.overlay.show();
+        // pull all the data
+	$.get( url, function( result ) {
+            $el_transcriptions_ids_parent.append( '<div class="transcriptions-ids"></div>' );
+            if( result.length > 0 ) {
+                var records = result.split( "\n" ),
+                    rna_records = [];
+                // create template for all pairs
+                _.each(records, function( record ) {
+                    rna_records.push( JSON.parse( record ) );
+                });
+                // extract headers or column names
+                self.modelHeaders = rna_records[ 0 ];
+                // save only the data records
+                self.model = rna_records.slice( 1, );
+                self.buildLeftPanel( self.model );
+            }
+            else {
+                self.$( '.transcriptions-ids' ).html( "<div> No results found. </div>" );
+                self.$( '.transcriptions-ids' ).show();
+            }
+            self.overlay.hide();
+            $el_loading.hide();
+	});
+    },
+
+    /** Build the left panel containing interactions */ 
+    buildLeftPanel: function( records ) {
+        var template = "",
+            self = this,
+            $el_transcriptions_ids = self.$( '.transcriptions-ids' ),
+            records_size_text = "";
+ 
+        // show how many records being shown
+        if( records.length >= self.toShow ) {
+            records_size_text = "Showing <b>" + self.toShow + "</b> interactions of <b>" + records.length + "</b>";
+        }
+        else {
+            records_size_text = "Showing only <b>" + records.length + " </b>interactions";
+        }
+        self.$( ".sample-current-size" ).empty().html( records_size_text );
+
+        // take only the data records and not headers
+        records = records.slice( 0, self.toShow );
+        _.each( records, function( record ) {
+            template = template + self._templateRNAInteractions( record );
+        });
+        $el_transcriptions_ids.html( template );
+        createFancyScroll( 'transcriptions-ids' );
+        $el_transcriptions_ids.show();
+        self.registerInteractionsEvents( self );
+    },
+
+    /** Register events */
+    registerInteractionsEvents: function( _self ) {
+        var self = _self,
+            $el_rna_pair = self.$( '.rna-pair' ),
+            $el_rna_interaction = self.$( '.rna-pair-interaction' );
+
         // highlight the transaction pair
         $el_rna_pair.off( 'mouseenter' ).on( 'mouseenter', function() {
             $( this ).addClass( 'pair-mouseenter' );
@@ -419,14 +605,12 @@ var SampleInteractions = {
 
         // fire when one interaction is selected
         $el_rna_interaction.off( 'click' ).on( 'click', function( e ) {
-            e.preventDefault();
-            e.stopPropagation();
-            var interaction_id = $( this ).siblings()[ 0 ].id,
-                records = self.current_results;
+            var interaction_id = e.target.parentNode.children[0].id,
+                records = self.model;
             for( var ctr = 0, len = records.length; ctr < len; ctr++ ) {
                 var item = records[ ctr ];
                 if( item[ 0 ] === interaction_id ) {
-                    self.build_information( item );
+                    self.buildInformation( item );
                     break;
                 }
             }
@@ -434,55 +618,119 @@ var SampleInteractions = {
     },
 
     /** Make information list of the selected interaction */
-    build_information: function( item ) {
+    buildInformation: function( item ) {
         var self = this,
-            $el_first_gene = $( "#rna-type1" ),
-            $el_second_gene = $( "#rna-type2" ),
+            $el_first_gene = self.$( "#rna-type1" ),
+            $el_second_gene = self.$( "#rna-type2" ),
             template_gene1 = "",
             template_gene2 = "";
-        self.make_summary_empty();
+        self.cleanSummary();
         $el_first_gene.append( self._templateInformation( item, "info-gene1", 0 ) );
         $el_second_gene.append( self._templateInformation( item, "info-gene2", 1 ) );
     },
 
-    /** Show data in the left panel */
-    show_data: function( search_by, url_text ) {
-        var self = this,
-            url = url_text ? url_text : "http://" + self.host + ":" + self.port +
-                "/?sample_name="+ SampleInteractions.sample_name +"&search=" + search_by,
-            $el_loading = $( ".loading" ),
-            $el_transcriptions_ids_parent = $( '.rna-transcriptions-container' );
-        
-        $( '.transcriptions-ids' ).remove();
-        // reset the elements
-        self.make_summary_empty();
-        $( '.check-all-interactions' )[ 0 ].checked = false;
-        $( ".sample-current-size" ).empty();
-        $el_loading.show();
-        // pull all the data
-	$.get( url, function( result ) {
-            $el_transcriptions_ids_parent.append( '<div class="transcriptions-ids"></div>' );
-            if( result.length > 0 ) {
-                var records = result.split( "\n" ),
-                    rna_records = [];
-                // create template for all pairs
-                _.each(records, function( record ) {
-                    rna_records.push( JSON.parse( record ) );
-                });
-                // extract headers or column names
-                self.headers = rna_records[ 0 ];
-                // save only the data records
-                self.current_results = rna_records.slice( 1, );
-                self.build_left_panel( self.current_results );
-            }
-            else {
-                $( '.transcriptions-ids' ).html( "<div> No results found. </div>" );
-                $( '.transcriptions-ids' ).show();
-            }
-            $el_loading.hide();
-	});
+    /** Set to default values */
+    setToDefaults: function() {
+        var self = this;
+        self.$( '.search-gene' )[ 0 ].value = "";
+        self.$( '.rna-sort' ).val( "score" );
+        self.$( '.check-all-interactions' )[ 0 ].checked = false;
+        self.setDefaultFilters();
+        self.cleanSummary();
     },
 
+    /** Set the filters to their default values */
+    setDefaultFilters: function() {
+        var self = this;
+        self.$( '.rna-filter' ).val( "-1" );
+        self.$( '.filter-operator' ).hide();
+        self.$( '.filter-operator' ).val( "-1" );
+        self.$( '.filter-value' )[ 0 ].value = "";
+    },
+
+    /** Clear all the plotting regions */
+    cleanSummary: function() {
+        var self = this;
+        self.$( "#rna-type1" ).empty();
+        self.$( "#rna-type2" ).empty();
+        self.$( "#rna-score1" ).empty();
+        self.$( "#rna-score2" ).empty();
+    },
+
+    _templateInteractions: function( options ) {
+        return '<div class="container one-sample">' +
+                   '<div class="row">' +
+                       '<div class="col-sm-2 elem-rna">' +
+                           '<div class="sample-name">' + options.sampleName +'</div>' +
+                           '<div class="sample-current-size"></div>' +
+                       '</div>' +
+                       '<div class="col-sm-2 elem-rna">' +
+                           '<input type="text" class="search-gene form-control elem-rna" value="" placeholder="Search..." title="Search">' +
+                       '</div>' +
+                       '<div class="col-sm-2 elem-rna">' +
+                           '<select name="sort" class="rna-sort elem-rna form-control elem-rna" title="Sort">' +
+                               '<option value="">Sort by...</option>' +
+	                       '<option value="score" selected>Score</option>' +
+                           '</select>' +
+                       '</div>' +
+                       '<div class="col-sm-6 elem-rna">' +
+	                   '<select name="filter" class="rna-filter form-control elem-rna" title="Filter">' +
+		               '<option value="-1">Filter by...</option>' +
+		               '<option value="score">Score</option>' +
+		               '<option value="family">RNA Family</option>' +
+	                   '</select>' +
+                           '<select name="filter-operator" class="filter-operator form-control elem-rna" title="Filter operator">' +
+        	               '<option value="-1">Choose operator...</option>' +
+	                       '<option value="equal">=</option>' +
+	                       '<option value="greaterthan">></option>' +
+                               '<option value="lessthan"><</option>' +
+                               '<option value="lessthanequal"><=</option>' +
+                               '<option value="greaterthanequal">>=</option>' +
+                               '<option value="notequalto"><></option>' +
+                           '</select>' +
+                         '<input type="text" class="filter-value form-control" title="Enter the selected filter value"' +
+                             'value="" placeholder="Enter the selected filters value..." />' +
+                       '</div>' +
+                   '</div>' +
+                   '<div class="row rna-results">' +
+                       '<div class="col-sm-2 rna-transcriptions-container">' +
+                           '<div class="interactions-loader"> Loading interactions... </div>' +
+                           '<div class="transcriptions-ids"></div>' +
+                       '</div>' +
+                       '<div class="col-sm-5 first-gene">' +
+                           '<div id="rna-type1"></div>' +
+                           '<div id="rna-score1"></div>' +
+                       '</div>' +
+                       '<div class="col-sm-5 second-gene">' +
+                           '<div id="rna-type2"></div>' +
+                           '<div id="rna-score2"></div>' +
+                       '</div>' +
+                   '</div>' +
+                   '<div class="row">' +
+                       '<div class="col-sm-10">' +
+                           '<input id="check_all_interactions" type="checkbox" class="check-all-interactions"' +
+                               'value="false" title="Check all" />' +
+                           '<span>Check all</span>' +
+		           '<button type="button" class="rna-summary btn btn-primary btn-rna btn-interaction" title="Get summary of RNA-RNA interactions">' +
+			       'Summary' +
+		           '</button>' +
+		           '<button type="button" class="export-results btn btn-primary btn-rna btn-interaction"' +
+                               'title="Export results as tab-separated file">' +
+			       'Export' +
+		           '</button>' +
+		           '<button type="button" class="reset-filters btn btn-primary btn-rna btn-interaction"' +
+                                  'title="Reset all the filters and reload original interactions">' +
+			      'Reset filters' +
+		           '</button>' +
+		           '<button type="button" class="back-samples btn btn-primary btn-rna btn-interaction" title="Back to all samples">' +
+			      'Back' +
+		           '</button>' +
+                       '</div>' +
+                       '<div class="col-sm-2"></div>' +
+                   '</div>' +
+               '</div>';
+    },
+    
     /** Make template for interactions for the selected sample */
     _templateRNAInteractions: function( record ) {
         return '<div class="rna-pair"><input type="checkbox" id="'+ record[ 0 ] +'" value="" class="rna-interaction" />' +
@@ -501,25 +749,8 @@ var SampleInteractions = {
 	            '</ul>' +
 	        '</div>';
     }
-};
-
-$(document).ready(function() {
-    // Fetch all samples
-    MultiSamples.get_samples();
-    MultiSamples.set_defaults_samples();
-    // reload the app on header click
-    $( '.rna-header' ).on('click', function( e ) {
-        e.preventDefault();
-        window.location.reload();
-    });
 });
 
-
-
-
-
-
-
-
-
+var headerView = new HeaderView();
+var allSamplesView = new AllSamplesView();
 
