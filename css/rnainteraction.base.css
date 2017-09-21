@@ -14,11 +14,6 @@ body {
     padding-left: 0px;
 }
 
-.rna-header-row {
-    margin: 0 -7.9%;
-}
-
-
 .rna-header {
     background-color: #2c3143;
     color: white;
@@ -26,8 +21,12 @@ body {
     cursor: pointer;
 }
 
+.rna-header-row {
+    margin: 0 -7.9%;
+}
+
 .one-sample,
-.loading-samples,
+.samples-loader,
 .sample-ids {
     display: none;
 }
@@ -56,7 +55,7 @@ body {
     border-bottom: 1px solid black;
 }
 
-.loading-samples {
+.samples-loader {
     margin: 1.5% 0 0 25%;
 }
 
@@ -78,11 +77,6 @@ body {
     font-weight: bold;
 }
 
-.loading { 
-    display:none;
-    padding-left: 50px;
-}
-
 .rna-filter, .filter-operator {
     display: inline-block;
     width:29%;
@@ -102,12 +96,16 @@ body {
     font-size: 8pt;
 }
 
-.filter-operator, .matrix-loading {
+.filter-operator, .matrix-loader {
     display: none;
 }
 
-.matrix-loading {
+.matrix-loader {
     padding: 1% 0 0 35%;
+}
+
+.interactions-loader {
+    margin: 1% 0 0 24%;
 }
 
 .filter-value {
@@ -143,7 +141,6 @@ body {
     margin-top: 1%;
 }
 
-
 #info-gene1, #info-gene2 { padding-top: 2%; }
 #info-gene1 ul li p { padding: 1%; border-left: 1px solid black; font-size: 11pt; }
 #info-gene2 ul li p { padding: 1%; border-left: 1px solid black; font-size: 11pt; }
@@ -157,6 +154,10 @@ body {
     width: 100%;
     height: 100%; 
     z-index: 1;
+}
+
+.plot-loader {
+    margin: 1% 0 0 38%;
 }
 
 .rna-footer {

@@ -44,12 +44,23 @@ var AllSamplesView = Backbone.View.extend ({
     initialize: function() {
        this.host = window.location.hostname;
        this.port = window.location.port;
+       this.overlay = this.$( '.loader' );
        this.render();
     },
 
     events: {
         'click .sample-summary': 'makeSummary',
-        'click .file-sample': 'getSampleInteractions'
+        'click .file-sample': 'getSampleInteractions',
+        'click .check-all-samples': 'selectAllSamples'
+    },
+
+    selectAllSamples: function( e ) {
+        var self = this,
+            $el_sample_checkboxes = self.$( '.file-sample-checkbox' ),
+            checked_status = e.target.checked;
+        _.each( $el_sample_checkboxes, function( item ) {
+            item.checked = checked_status ? true : false;
+        });
     },
 
     setToDefaults: function() {
@@ -65,12 +76,15 @@ var AllSamplesView = Backbone.View.extend ({
     /** Fetch all the samples */
     getSamples: function() {
         var self = this,
-            url = "http://" + self.host + ":" + self.port + "/?multisamples=true";
-        self.$( '.loading-samples' ).show();
+            url = "http://" + self.host + ":" + self.port + "/?multisamples=true",
+            $el_samples_loader = self.$( '.samples-loader' );
+        self.overlay.show();
+        $el_samples_loader.show();
         $.get( url, function( samples ) {
             samples = samples.split( "\n" );
             self.createSamplesList( samples );
-            self.$( '.loading-samples' ).hide();
+            self.overlay.hide();
+            $el_samples_loader.hide();
             self.$( '.sample-ids' ).show();
         });
     },
@@ -104,10 +118,12 @@ var AllSamplesView = Backbone.View.extend ({
         });
         if( checked_ids && checked_ids.length > 0 ) {
             var ids = checked_ids.split( "," ),
-                ids_length = ids.length;
+                ids_length = ids.length,
+                $el_matrix_loader = self.$( '.matrix-loader' );
             if ( ids.length > 0) {
                 self.$( '#samples-plot' ).hide();
-                self.$( '.loader' ).show();
+                self.overlay.show();
+                $el_matrix_loader.show();
                 var url = "http://" + self.host + ":" + self.port + "/?sample_ids=" + checked_ids;
                 $.get( url, function( samples ) {
                     samples = samples.split( "\n" ).map( Number );
@@ -130,8 +146,9 @@ var AllSamplesView = Backbone.View.extend ({
                       title: plot_title
                     };
                     Plotly.newPlot( 'samples-plot', data, layout );
+                    self.overlay.hide();
+                    $el_matrix_loader.hide();
                     self.$( '#samples-plot' ).show();
-                    self.$( '.loader' ).hide();
                 });
             }
         }
@@ -153,14 +170,13 @@ var AllSamplesView = Backbone.View.extend ({
     _templateAllSamples: function() {
         return '<div class="container multi-samples">' +
                    '<div class="row samples">' +
-                       '<div class="samples-overlay loader"></div>' +
                        '<div class="col-sm-2 samples-container">' +
-                           '<div class="loading-samples"> loading samples... </div>' +
+                           '<div class="samples-loader"> loading samples... </div>' +
                            '<div class="sample-ids">' +
                            '</div>' +
                         '</div>' +
                         '<div class="col-sm-10">' +
-                            '<div class="matrix-loading loader">' +
+                            '<div class="matrix-loader">' +
                                 '<div> Loading results. Please wait. It might take a few minutes... </div>' +
                             '</div>' +
                             '<div id="samples-plot"></div>' +
@@ -198,6 +214,7 @@ var InteractionsView = Backbone.View.extend ({
        this.model = [];
        this.sampleName = options.sampleName;
        this.toShow = 1000;
+       this.overlay = this.$( '.loader' );
        this.render( options );
     },
 
@@ -253,7 +270,7 @@ var InteractionsView = Backbone.View.extend ({
 
         $el_reset_filters.off( 'click' ).on( 'click', function( e ) {
             self.resetFilters( e );
-        })
+        });
     },
 
     searchGene: function( e ) {
@@ -360,36 +377,68 @@ var InteractionsView = Backbone.View.extend ({
         });
         checked_ids = checked_ids.split( "," );
         if( checked_ids && checked_ids[ 0 ] === "" ) {
-            return;
+            self.fetchSummaryAllInteractions();
         }
-        for( var ctr_ids = 0; ctr_ids < checked_ids.length; ctr_ids++ ) {
-            for( var ctr = 0; ctr < model_length; ctr++ ) {
-                var item = self.model[ ctr ];
-                if ( checked_ids[ ctr_ids ] === item[ 0 ] ) {
-                    summary_items.push( item );
-                    break;
+        else {
+            for( var ctr_ids = 0; ctr_ids < checked_ids.length; ctr_ids++ ) {
+                for( var ctr = 0; ctr < model_length; ctr++ ) {
+                    var item = self.model[ ctr ];
+                    if ( checked_ids[ ctr_ids ] === item[ 0 ] ) {
+                        summary_items.push( item );
+                        break;
+                    }
                 }
             }
+            // summary fields - geneid (1 and 2) and type (1 and 2)
+            for ( var i = 0; i < summary_items.length; i++ ) {
+                summary_result_type2[ summary_items[ i ][ 9 ] ] = ( summary_result_type2[ summary_items[ i ][ 9 ] ] || 0 ) + 1;
+                summary_result_score1.push( summary_items[ i ][ 16 ] );
+                summary_result_score2.push( summary_items[ i ][ 17 ] );
+                summary_result_score.push( summary_items[ i ][ 18 ] );
+            }
+            
+            var plottingData = {
+                'family_names_count': summary_result_type2,
+                'score': summary_result_score,
+                'score1': summary_result_score1,
+                'score2': summary_result_score2
+            };
+            self.cleanSummary();
+            self.plotInteractions( plottingData );
         }
-        // summary fields - geneid (1 and 2) and type (1 and 2)
-        for ( var i = 0; i < summary_items.length; i++ ) {
-            summary_result_type2[ summary_items[ i ][ 9 ] ] = ( summary_result_type2[ summary_items[ i ][ 9 ] ] || 0 ) + 1;
-            summary_result_score1.push( summary_items[ i ][ 16 ] );
-            summary_result_score2.push( summary_items[ i ][ 17 ] );
-            summary_result_score.push( summary_items[ i ][ 18 ] );
-        }
+    },
 
-        self.cleanSummary();
- 
+    plotInteractions: function( data ) {
+        var self = this;
         // build scrolls
         createFancyScroll( "first-gene" );
         createFancyScroll( "second-gene" );
-
         // plot the summary as pie charts and histograms
-        self.plotHistogram( summary_result_score, "rna-type1", 'Score distribution' );
-        self.plotPieChart( summary_result_type2, "rna-type2", 'Gene2 family distribution' );
-        self.plotHistogram( summary_result_score1, "rna-score1", 'Score1 distribution' );
-        self.plotHistogram( summary_result_score2, "rna-score2", 'Score2 distribution' );
+        self.plotHistogram( data.score, "rna-type1", 'Score distribution for ' + self.sampleName );
+        self.plotPieChart( data.family_names_count, "rna-type2", 'Gene2 RNA family distribution for ' + self.sampleName );
+        self.plotHistogram( data.score1, "rna-score1", 'Score1 distribution for ' + self.sampleName );
+        self.plotHistogram( data.score2, "rna-score2", 'Score2 distribution for ' + self.sampleName );
+    },
+
+    fetchSummaryAllInteractions: function() {
+        var self = this,
+            url = "http://" + self.host + ":" + self.port + "/?plot_sample_name="+ self.sampleName;
+        self.cleanSummary();
+        self.$( '#rna-type1' ).append( "<p class='plot-loader'>loading plots. Please wait...</p>" );
+        self.$( '#rna-type2' ).append( "<p class='plot-loader'>loading plots. Please wait...</p>" );
+        self.overlay.show();
+        $.get( url, function( data ) {
+            data = data.split( "\n" );
+            var plotData = {
+                family_names_count: JSON.parse( data[ 0 ] ),
+                score: JSON.parse( data[ 1 ] ),
+                score1: JSON.parse( data[ 2 ] ),
+                score2: JSON.parse( data[ 3 ] ),
+            };
+            self.plotInteractions( plotData );
+            self.overlay.hide();
+            self.$( '.plot-loader' ).remove();
+        });
     },
 
     backToAllSamples: function( e ) {
@@ -415,9 +464,9 @@ var InteractionsView = Backbone.View.extend ({
             file_name = Date.now().toString( 16 ) + '_results.tsv',
             self = this;
         // add headers to the tsv file
-        tsv_data = self.modelHeaders.join("\t") + "\n";
+        tsv_data = self.modelHeaders.join( "\t" ) + "\n";
         _.each( self.model, function( item ) {
-            tsv_data = tsv_data + item.join("\t") + "\n";
+            tsv_data = tsv_data + item.join( "\t" ) + "\n";
         });
         tsv_data = window.encodeURIComponent( tsv_data );
         link.setAttribute( 'href', 'data:application/octet-stream,' + tsv_data );
@@ -436,7 +485,7 @@ var InteractionsView = Backbone.View.extend ({
         var self = this,
             url = url_text ? url_text : "http://" + self.host + ":" + self.port +
                 "/?sample_name="+ self.sampleName +"&search=" + search_by,
-            $el_loading = self.$( ".loading" ),
+            $el_loading = self.$( ".interactions-loader" ),
             $el_transcriptions_ids_parent = self.$( '.rna-transcriptions-container' );
         
         self.$( '.transcriptions-ids' ).remove();
@@ -445,6 +494,7 @@ var InteractionsView = Backbone.View.extend ({
         self.$( '.check-all-interactions' )[ 0 ].checked = false;
         self.$( ".sample-current-size" ).empty();
         $el_loading.show();
+        self.overlay.show();
         // pull all the data
 	$.get( url, function( result ) {
             $el_transcriptions_ids_parent.append( '<div class="transcriptions-ids"></div>' );
@@ -465,6 +515,7 @@ var InteractionsView = Backbone.View.extend ({
                 self.$( '.transcriptions-ids' ).html( "<div> No results found. </div>" );
                 self.$( '.transcriptions-ids' ).show();
             }
+            self.overlay.hide();
             $el_loading.hide();
 	});
     },
@@ -594,7 +645,7 @@ var InteractionsView = Backbone.View.extend ({
                    '</div>' +
                    '<div class="row rna-results">' +
                        '<div class="col-sm-2 rna-transcriptions-container">' +
-                           '<div class="loading"> loading results... </div>' +
+                           '<div class="interactions-loader"> loading interactions... </div>' +
                            '<div class="transcriptions-ids"></div>' +
                        '</div>' +
                        '<div class="col-sm-5 first-gene">' +

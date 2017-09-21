@@ -17,7 +17,7 @@ class RNAInteraction:
         self.default_order_by = 'score'
         self.default_ascending = False
         self.searchable_fields = [ 'txid1', 'txid2', 'geneid1', 'geneid2', 'symbol1', 'symbol2', 'type1', 'type2' ]
-        self.number_samples = 10
+        self.number_samples = 6
         self.sample_prefix = 'sample'
         self.sqlite_table_name = 'interactions'
         self.hdf_file_ext = '.hdf'
@@ -52,6 +52,32 @@ class RNAInteraction:
             sample_data = pd.read_hdf( item + self.hdf_file_ext, item, index=None )
             samples[ item ] = sample_data
         return samples
+
+    @classmethod
+    def get_plotting_data( self, sample_name ):
+        """ Generate data for plotting """
+        sample_data = pd.read_hdf( sample_name + self.hdf_file_ext, sample_name, index=None )
+        family_names_count = dict()
+        score = list()
+        score1 = list()
+        score2 = list()
+        for item_x in xrange( 0, len( sample_data ) ):
+            row_x = sample_data[ item_x: item_x + 1 ] 
+            family_name = row_x[ 'type2' ].values[ 0 ]
+            if family_name in family_names_count:
+                family_names_count[ family_name ] += 1
+            else:
+               family_names_count[ family_name ] = 1
+            score.append( row_x[ 'score' ].values[ 0 ] )
+            score1.append( row_x[ 'score1' ].values[ 0 ] )
+            score2.append( row_x[ 'score2' ].values[ 0 ] )
+
+        return {
+            'family_names_count': family_names_count,
+            'score': score,
+            'score1': score1,
+            'score2': score2
+        }
 
     @classmethod
     def find_common( self, samples, sample_ids ):
@@ -101,12 +127,12 @@ class RNAInteraction:
         return hdfdata.sort_values( by=self.default_order_by, ascending=self.default_ascending )
 
     @classmethod
-    def read_from_file( self, file_path, how_many=1000 ):
+    def read_from_file( self, file_path ):
         """ Select data for the first load """
         return self.read_hdf_sample( file_path )
         
     @classmethod
-    def search_data( self, file_path, search_query, how_many=1000 ):
+    def search_data( self, file_path, search_query ):
         """ Select data based on a search query """
         all_data = self.read_hdf_sample( file_path )
         filtered_data = all_data[ all_data[ self.searchable_fields[ 0 ] ].str.lower().str.contains( search_query.lower() ) | \
@@ -127,7 +153,7 @@ class RNAInteraction:
         return all_data[ all_data[ 'chimeraid' ].str.contains( ids_pattern ) ]
 
     @classmethod
-    def filter_data( self, file_path, params, how_many=1000 ):
+    def filter_data( self, file_path, params ):
         """ Filter data based on the filter, equality or inequality operator and filter's value """
         filter_type = params[ "filter_type" ][ 0 ]
         filter_operator = params[ "filter_op" ][ 0 ]
@@ -196,6 +222,13 @@ if __name__ == "__main__":
                 matrix = data.find_common( samples, sample_ids )
                 for item in matrix:
                     content += str( item[ 0 ] ) + '\n'
+            elif( "plot_sample_name" in query ):
+                sample_name = params[ 'plot_sample_name' ][ 0 ]
+                data = RNAInteraction.get_plotting_data( sample_name )
+                content = json.dumps( data[ 'family_names_count' ] ) + '\n'
+                content = content + json.dumps( data[ "score" ] ) + '\n'
+                content = content + json.dumps( data[ "score1" ] ) + '\n'
+                content = content + json.dumps( data[ "score2" ] ) + '\n'
             elif( "multisamples" in query ):
                 file_names = RNAInteraction.get_sample_names( file_name )
                 for name in file_names:
