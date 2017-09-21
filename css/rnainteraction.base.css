@@ -39,8 +39,9 @@ body {
     padding-left: 0;
 }
 
-.elem-width {
+.elem-rna {
     margin-top: 0.5%;
+    font-size: 9pt;
 }
 
 .samples-container,
@@ -142,8 +143,8 @@ body {
 }
 
 #info-gene1, #info-gene2 { padding-top: 2%; }
-#info-gene1 ul li p { padding: 1%; border-left: 1px solid black; font-size: 11pt; }
-#info-gene2 ul li p { padding: 1%; border-left: 1px solid black; font-size: 11pt; }
+#info-gene1 ul li p { padding: 1%; border-left: 1px solid black; font-size: 9pt; }
+#info-gene2 ul li p { padding: 1%; border-left: 1px solid black; font-size: 9pt; }
 
 .samples-overlay {
     display: none;

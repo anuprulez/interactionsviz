@@ -63,6 +63,7 @@ var AllSamplesView = Backbone.View.extend ({
         });
     },
 
+    /** Set all the elements to their default values */
     setToDefaults: function() {
         var self = this,
             $el_sample_cheboxes = self.$( '.file-sample-checkbox' );
@@ -154,6 +155,7 @@ var AllSamplesView = Backbone.View.extend ({
         }
     },
  
+    /** Open the interactions view of the selected sample */
     getSampleInteractions: function( e ) {
         var self = this,
             options = { 'sampleName': e.target.id },
@@ -162,16 +164,18 @@ var AllSamplesView = Backbone.View.extend ({
         interactionsView = new InteractionsView( options );
     },
     
+    /** Show all the samples */
     render: function() {
        this.$el.append( this._templateAllSamples() );
        this.getSamples();
     },
 
+    /** Template for all samples view */
     _templateAllSamples: function() {
         return '<div class="container multi-samples">' +
                    '<div class="row samples">' +
                        '<div class="col-sm-2 samples-container">' +
-                           '<div class="samples-loader"> loading samples... </div>' +
+                           '<div class="samples-loader"> Loading samples... </div>' +
                            '<div class="sample-ids">' +
                            '</div>' +
                         '</div>' +
@@ -268,18 +272,21 @@ var InteractionsView = Backbone.View.extend ({
             self.exportInteractions( e );
         });
 
+        // reset the filters
         $el_reset_filters.off( 'click' ).on( 'click', function( e ) {
             self.resetFilters( e );
         });
     },
 
+    /** Callback for searching interactions */ 
     searchGene: function( e ) {
         e.preventDefault();
         var query = e.target.value,
             self = this;
         if( query.length >= self.minQueryLength ) {
-            if( e.which === 13 ) {
+            if( e.which === 13 || e.keyCode == 13 ) {
                 self.showInteractions( query );
+                self.setDefaultFilters();
             }
         }
         else {
@@ -287,12 +294,14 @@ var InteractionsView = Backbone.View.extend ({
         }
     },
 
+    /** Sort the interactions default by score in descending order */
     sortInteractions: function( e ) {
         var self = this;
         e.preventDefault();
         self.showInteractions( "" );
     },
 
+    /** Filter the interactions using filter types */
     filterInteractions: function( e ) {
         e.preventDefault();
         var self = this,
@@ -302,6 +311,7 @@ var InteractionsView = Backbone.View.extend ({
         value === "score" ? $el_filter_operator.show() : $el_filter_operator.hide();
     },
 
+    /** Fetch interactions using the filters */
     setFilterValue: function( e ) {
         e.preventDefault();
         var self = this,
@@ -319,10 +329,11 @@ var InteractionsView = Backbone.View.extend ({
             var url = "http://" + self.host + ":" + self.port + "/?sample_name="+ self.sampleName +
                 "&filter_type=" + filterType + "&filter_op=" + filterOperator + "&filter_value=" + query;
             self.showInteractions( "", url );
+            self.$( '.search-gene' )[ 0 ].value = "";
         }
     },
 
-    /** Plot pie charts for interactions chosen for summary */
+    /** Plot pie chart for interactions chosen for summary */
     plotPieChart: function( dict, container, name ) {
         var layout = {
             height:400,
@@ -345,6 +356,7 @@ var InteractionsView = Backbone.View.extend ({
         Plotly.newPlot( container, data, layout );
     },
 
+    /** Plot histogram for interactions chosen for summary */
     plotHistogram: function( data, container, name ) {
 	var trace = {
 	    x: data,
@@ -359,6 +371,7 @@ var InteractionsView = Backbone.View.extend ({
 	Plotly.newPlot( container, plot_data, layout );
     },
 
+    /** Fetch the summary data for the selected interactions */
     getInteractionsSummary: function( e ) {
         e.preventDefault();
         var self = this,
@@ -376,6 +389,8 @@ var InteractionsView = Backbone.View.extend ({
             }
         });
         checked_ids = checked_ids.split( "," );
+        // if there are no checked interactions, then summary is computed over
+        // server for all the interactions for that sample (or filtered interactions)
         if( checked_ids && checked_ids[ 0 ] === "" ) {
             self.fetchSummaryAllInteractions();
         }
@@ -408,6 +423,7 @@ var InteractionsView = Backbone.View.extend ({
         }
     },
 
+    /** Send data for summary plotting */
     plotInteractions: function( data ) {
         var self = this;
         // build scrolls
@@ -420,12 +436,33 @@ var InteractionsView = Backbone.View.extend ({
         self.plotHistogram( data.score2, "rna-score2", 'Score2 distribution for ' + self.sampleName );
     },
 
+    /** Fetch summary data from server */
     fetchSummaryAllInteractions: function() {
         var self = this,
-            url = "http://" + self.host + ":" + self.port + "/?plot_sample_name="+ self.sampleName;
+            url = "",
+            queryString = "",
+            $el_search_gene = self.$( '.search-gene' ),
+            $el_filter_type = self.$( '.rna-filter' ),
+            $el_filter_operator = self.$( '.filter-operator' ),
+            $el_filter_value = self.$( '.filter-value' ),
+            filterType = $el_filter_type.find( ":selected" ).val();
+
+        // take into account if the filters are active while fetching 
+        // summary data and build url accordingly
+        if ( $el_search_gene.val() !== "" ) {
+            queryString = "&search_by=" + $el_search_gene.val();
+        }
+        else {
+            if ( filterType !== "-1" ) {
+                var filterOperator = $el_filter_operator.find( ":selected" ).val();
+                var filterValue = self.$( '.filter-value' ).val();
+                queryString = "&filter_type=" + filterType + "&filter_op=" + filterOperator + "&filter_value=" + filterValue;
+            }
+        }
+        url = "http://" + self.host + ":" + self.port + "/?plot_sample_name=" + self.sampleName + queryString;
         self.cleanSummary();
-        self.$( '#rna-type1' ).append( "<p class='plot-loader'>loading plots. Please wait...</p>" );
-        self.$( '#rna-type2' ).append( "<p class='plot-loader'>loading plots. Please wait...</p>" );
+        self.$( '#rna-type1' ).append( "<p class='plot-loader'>Loading plots. Please wait...</p>" );
+        self.$( '#rna-type2' ).append( "<p class='plot-loader'>Loading plots. Please wait...</p>" );
         self.overlay.show();
         $.get( url, function( data ) {
             data = data.split( "\n" );
@@ -441,6 +478,7 @@ var InteractionsView = Backbone.View.extend ({
         });
     },
 
+    /** Back to all samples view */
     backToAllSamples: function( e ) {
         e.preventDefault();
         this.$( '.one-sample' ).hide();
@@ -448,6 +486,7 @@ var InteractionsView = Backbone.View.extend ({
         allSamplesView.setToDefaults();
     },
 
+    /** Select all the interactions in the left panel */
     checkAllInteractions: function( e ) {
         var $el_interactions_checked = this.$( '.rna-interaction' ),
             checkall_status = e.target.checked;
@@ -475,19 +514,20 @@ var InteractionsView = Backbone.View.extend ({
         link_click = link.click();
     },
 
+    /** Callback for the reset filter button */
     resetFilters: function( e ) {
         e.preventDefault();
         this.setToDefaults();
         this.showInteractions( "" );
     },
 
+    /** Fetch all the interactions for the selected sample */
     showInteractions: function( search_by, url_text ) {
         var self = this,
             url = url_text ? url_text : "http://" + self.host + ":" + self.port +
                 "/?sample_name="+ self.sampleName +"&search=" + search_by,
             $el_loading = self.$( ".interactions-loader" ),
             $el_transcriptions_ids_parent = self.$( '.rna-transcriptions-container' );
-        
         self.$( '.transcriptions-ids' ).remove();
         // reset the elements
         self.cleanSummary();
@@ -520,7 +560,7 @@ var InteractionsView = Backbone.View.extend ({
 	});
     },
 
-    /** Build the left panel */ 
+    /** Build the left panel containing interactions */ 
     buildLeftPanel: function( records ) {
         var template = "",
             self = this,
@@ -547,6 +587,7 @@ var InteractionsView = Backbone.View.extend ({
         self.registerInteractionsEvents( self );
     },
 
+    /** Register events */
     registerInteractionsEvents: function( _self ) {
         var self = _self,
             $el_rna_pair = self.$( '.rna-pair' ),
@@ -588,18 +629,26 @@ var InteractionsView = Backbone.View.extend ({
         $el_second_gene.append( self._templateInformation( item, "info-gene2", 1 ) );
     },
 
+    /** Set to default values */
     setToDefaults: function() {
         var self = this;
         self.$( '.search-gene' )[ 0 ].value = "";
         self.$( '.rna-sort' ).val( "score" );
+        self.$( '.check-all-interactions' )[ 0 ].checked = false;
+        self.setDefaultFilters();
+        self.cleanSummary();
+    },
+
+    /** Set the filters to their default values */
+    setDefaultFilters: function() {
+        var self = this;
         self.$( '.rna-filter' ).val( "-1" );
         self.$( '.filter-operator' ).hide();
         self.$( '.filter-operator' ).val( "-1" );
         self.$( '.filter-value' )[ 0 ].value = "";
-        self.$( '.check-all-interactions' )[ 0 ].checked = false;
-        self.cleanSummary();
     },
 
+    /** Clear all the plotting regions */
     cleanSummary: function() {
         var self = this;
         self.$( "#rna-type1" ).empty();
@@ -611,26 +660,26 @@ var InteractionsView = Backbone.View.extend ({
     _templateInteractions: function( options ) {
         return '<div class="container one-sample">' +
                    '<div class="row">' +
-                       '<div class="col-sm-2 elem-width">' +
+                       '<div class="col-sm-2 elem-rna">' +
                            '<div class="sample-name">' + options.sampleName +'</div>' +
                            '<div class="sample-current-size"></div>' +
                        '</div>' +
-                       '<div class="col-sm-2 elem-width">' +
-                           '<input type="text" class="search-gene elem-width form-control" value="" placeholder="Search..." title="Search">' +
+                       '<div class="col-sm-2 elem-rna">' +
+                           '<input type="text" class="search-gene form-control elem-rna" value="" placeholder="Search..." title="Search">' +
                        '</div>' +
-                       '<div class="col-sm-2 elem-width">' +
-                           '<select name="sort" class="rna-sort elem-width form-control" title="Sort">' +
+                       '<div class="col-sm-2 elem-rna">' +
+                           '<select name="sort" class="rna-sort elem-rna form-control elem-rna" title="Sort">' +
                                '<option value="">Sort by...</option>' +
 	                       '<option value="score" selected>Score</option>' +
                            '</select>' +
                        '</div>' +
-                       '<div class="col-sm-6 elem-width">' +
-	                   '<select name="filter" class="rna-filter form-control" title="Filter">' +
+                       '<div class="col-sm-6 elem-rna">' +
+	                   '<select name="filter" class="rna-filter form-control elem-rna" title="Filter">' +
 		               '<option value="-1">Filter by...</option>' +
 		               '<option value="score">Score</option>' +
 		               '<option value="family">RNA Family</option>' +
 	                   '</select>' +
-                           '<select name="filter-operator" class="filter-operator form-control" title="Filter operator">' +
+                           '<select name="filter-operator" class="filter-operator form-control elem-rna" title="Filter operator">' +
         	               '<option value="-1">Choose operator...</option>' +
 	                       '<option value="equal">=</option>' +
 	                       '<option value="greaterthan">></option>' +
@@ -645,7 +694,7 @@ var InteractionsView = Backbone.View.extend ({
                    '</div>' +
                    '<div class="row rna-results">' +
                        '<div class="col-sm-2 rna-transcriptions-container">' +
-                           '<div class="interactions-loader"> loading interactions... </div>' +
+                           '<div class="interactions-loader"> Loading interactions... </div>' +
                            '<div class="transcriptions-ids"></div>' +
                        '</div>' +
                        '<div class="col-sm-5 first-gene">' +
