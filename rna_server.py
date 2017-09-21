@@ -17,7 +17,7 @@ class RNAInteraction:
         self.default_order_by = 'score'
         self.default_ascending = False
         self.searchable_fields = [ 'txid1', 'txid2', 'geneid1', 'geneid2', 'symbol1', 'symbol2', 'type1', 'type2' ]
-        self.number_samples = 3
+        self.number_samples = 9
         self.sample_prefix = 'sample'
         self.sqlite_table_name = 'interactions'
         self.hdf_file_ext = '.hdf'
@@ -35,6 +35,9 @@ class RNAInteraction:
         interactions_dataframe = pd.read_table( file_path, sep='\t', header=0 )
         # random sampling
         interactions_dataframe = interactions_dataframe.sample( frac=1 ).reset_index( drop=True )
+        # inflate the interactions three-fold
+        frames = [ interactions_dataframe, interactions_dataframe, interactions_dataframe ]
+        interactions_dataframe = pd.concat( frames )
         size_each_file = len(interactions_dataframe) / self.number_samples
         for sample_number in xrange( 0, self.number_samples ):
             fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
