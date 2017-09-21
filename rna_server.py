@@ -27,7 +27,7 @@ class RNAInteraction:
         """ Get all the file names of the samples """
         self.make_samples( file_name )
         file_names = [ file.split( '.' )[ 0 ] for file in os.listdir( '.' ) if file.startswith( self.sample_prefix ) ]
-        return sorted( file_names, key=str.lower)
+        return sorted( file_names, key=str.lower )
 
     @classmethod
     def make_samples( self, file_path ):

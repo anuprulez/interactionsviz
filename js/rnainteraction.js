@@ -688,7 +688,7 @@ var InteractionsView = Backbone.View.extend ({
                                '<option value="greaterthanequal">>=</option>' +
                                '<option value="notequalto"><></option>' +
                            '</select>' +
-                         '<input type="text" class="filter-value form-control" title="Enter the selected filter value"' +
+                         '<input type="text" class="filter-value form-control elem-rna" title="Enter the selected filter value"' +
                              'value="" placeholder="Enter the selected filters value..." />' +
                        '</div>' +
                    '</div>' +
