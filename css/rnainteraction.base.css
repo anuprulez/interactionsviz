@@ -2,6 +2,7 @@
 body {
     font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
     font-size: 9pt;
+    background-color: #f8f8f8;
 }
 
 .row {
@@ -54,6 +55,7 @@ body {
 .samples {
     height: 80%;
     border-bottom: 1px solid black;
+    background-color: white;
 }
 
 .samples-loader {
@@ -65,6 +67,7 @@ body {
     margin-top: 1%;
     border-top: 1px solid black;
     border-bottom: 1px solid black;
+    background-color: white;
 }
 
 .sample-ids, .transcriptions-ids {
@@ -117,12 +120,16 @@ body {
 .first-gene {
     height: 100%;
     border-right: 1px solid black;
-    overflow: auto;
+    overflow: auto; 
 }
 
 .second-gene {
     height: 100%;
     overflow: auto;
+}
+
+.both-genes {
+    display: none;
 }
 
 .pair-mouseenter {
@@ -142,9 +149,19 @@ body {
     margin-top: 1%;
 }
 
-#info-gene1, #info-gene2 { padding-top: 2%; }
+#info-gene1, #info-gene2 { padding-top: 2%; display: inline-block; width: 30%; }
+#info-gene1 { margin-right: 25%; }
 #info-gene1 ul li p { padding: 1%; border-left: 1px solid black; font-size: 9pt; }
 #info-gene2 ul li p { padding: 1%; border-left: 1px solid black; font-size: 9pt; }
+
+.seq-alignment > pre {
+    margin: 0;
+    font-size: 11pt;
+    background-color: white;
+    border: none;
+    padding: 4% 0 0 30%;
+    color: green;
+}
 
 .samples-overlay {
     display: none;

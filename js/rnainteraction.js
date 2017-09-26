@@ -371,6 +371,21 @@ var InteractionsView = Backbone.View.extend ({
 	Plotly.newPlot( container, plot_data, layout );
     },
 
+    /** Switch between two sections and one section */
+    showHideGeneSections: function( show ) {
+        var self = this;
+        if ( show ) {
+            self.$( ".first-gene" ).show();
+            self.$( ".second-gene" ).show();
+            self.$( ".both-genes" ).hide();
+        }
+        else {
+            self.$( ".first-gene" ).hide();
+            self.$( ".second-gene" ).hide();
+            self.$( ".both-genes" ).show();
+        }
+    },
+
     /** Fetch the summary data for the selected interactions */
     getInteractionsSummary: function( e ) {
         e.preventDefault();
@@ -383,6 +398,8 @@ var InteractionsView = Backbone.View.extend ({
             summary_result_score = [],
             summary_result_score1 = [],
             summary_result_score2 = [];
+
+        self.showHideGeneSections( true );
         _.each( checkboxes, function( item ) {
             if( item.checked ) {
                 checked_ids = ( checked_ids === "" ) ? item.id : checked_ids + ',' + item.id;
@@ -461,6 +478,7 @@ var InteractionsView = Backbone.View.extend ({
         }
         url = "http://" + self.host + ":" + self.port + "/?plot_sample_name=" + self.sampleName + queryString;
         self.cleanSummary();
+        self.showHideGeneSections( true );
         self.$( '#rna-type1' ).append( "<p class='plot-loader'>Loading plots. Please wait...</p>" );
         self.$( '#rna-type2' ).append( "<p class='plot-loader'>Loading plots. Please wait...</p>" );
         self.overlay.show();
@@ -620,13 +638,15 @@ var InteractionsView = Backbone.View.extend ({
     /** Make information list of the selected interaction */
     buildInformation: function( item ) {
         var self = this,
-            $el_first_gene = self.$( "#rna-type1" ),
-            $el_second_gene = self.$( "#rna-type2" ),
-            template_gene1 = "",
-            template_gene2 = "";
+            $el_both_genes = self.$( ".both-genes" );
         self.cleanSummary();
-        $el_first_gene.append( self._templateInformation( item, "info-gene1", 0 ) );
-        $el_second_gene.append( self._templateInformation( item, "info-gene2", 1 ) );
+        $el_both_genes.empty();
+        self.showHideGeneSections( false );
+        $el_both_genes.append( self._templateInformation( item, "info-gene1", 0 ) );
+        $el_both_genes.append( self._templateInformation( item, "info-gene2", 1 ) );
+        var alignment = VisualizeAlignment.visualize4d("UAAUAGUGGUGAGGAGAAUUU", "CCAUACUCCUCACACACCAAA", [[12, 6] ,[4, 20]]);
+        var show_alignment = VisualizeAlignment.repres(alignment);
+        $el_both_genes.append( "<div class='seq-alignment'><pre>" + show_alignment + "</pre></div>" );
     },
 
     /** Set to default values */
@@ -655,6 +675,7 @@ var InteractionsView = Backbone.View.extend ({
         self.$( "#rna-type2" ).empty();
         self.$( "#rna-score1" ).empty();
         self.$( "#rna-score2" ).empty();
+        self.$( ".both-genes" ).empty();
     },
 
     _templateInteractions: function( options ) {
@@ -697,6 +718,7 @@ var InteractionsView = Backbone.View.extend ({
                            '<div class="interactions-loader"> Loading interactions... </div>' +
                            '<div class="transcriptions-ids"></div>' +
                        '</div>' +
+                       '<div class="col-sm-10 both-genes"></div>' +
                        '<div class="col-sm-5 first-gene">' +
                            '<div id="rna-type1"></div>' +
                            '<div id="rna-score1"></div>' +
@@ -739,7 +761,7 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Template for showing information of the selected interaction */
     _templateInformation: function( item, id, file_pos, header_text ) {
-        return '<div id="'+ id +'">' +
+        return '<span id="'+ id +'">' +
 	           '<ul>' +
 	               '<li><p>Geneid: <b>' + item[ 4 + file_pos ] + '</b></p></li>' +
 	               '<li><p>Symbol: <b>' + item[ 6 + file_pos ] + '</b></p></li>' +
@@ -747,7 +769,7 @@ var InteractionsView = Backbone.View.extend ({
 	               '<li><p>Score'+ (file_pos + 1) +': <b>' + item[ 16 + file_pos ] + '</b></p></li>' +
                        '<li><p>Score: <b>' + item[ 18 ] + '</b></p></li>' +
 	            '</ul>' +
-	        '</div>';
+	        '</span>';
     }
 });
 
