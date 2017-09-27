@@ -132,7 +132,7 @@ body {
     display: none;
 }
 
-.pair-mouseenter {
+.pair-mouseenter, .selected-item {
     background-color: #337ab7;
     color: white;
     cursor: pointer;
@@ -147,6 +147,17 @@ body {
 
 .sample-summary {
     margin-top: 1%;
+}
+
+.interaction-header {
+    margin: 1% 0 0 1%;
+    background-color: #f8f8f8;
+    font-weight: bold;
+}
+
+.interaction-header a {
+    margin-left: 75%;
+    font-weight: normal;
 }
 
 #info-gene1, #info-gene2 { padding-top: 2%; display: inline-block; width: 30%; }

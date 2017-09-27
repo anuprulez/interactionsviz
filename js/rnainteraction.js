@@ -625,9 +625,11 @@ var InteractionsView = Backbone.View.extend ({
         $el_rna_interaction.off( 'click' ).on( 'click', function( e ) {
             var interaction_id = e.target.parentNode.children[0].id,
                 records = self.model;
+            self.$( ".rna-pair" ).removeClass( 'selected-item' );
             for( var ctr = 0, len = records.length; ctr < len; ctr++ ) {
                 var item = records[ ctr ];
                 if( item[ 0 ] === interaction_id ) {
+                    self.$( this ).parent().addClass( ' selected-item' );
                     self.buildInformation( item );
                     break;
                 }
@@ -642,11 +644,94 @@ var InteractionsView = Backbone.View.extend ({
         self.cleanSummary();
         $el_both_genes.empty();
         self.showHideGeneSections( false );
+        $el_both_genes.append( "<div class='interaction-header'>Genes Information </div>" );
         $el_both_genes.append( self._templateInformation( item, "info-gene1", 0 ) );
         $el_both_genes.append( self._templateInformation( item, "info-gene2", 1 ) );
-        var alignment = VisualizeAlignment.visualize4d("UAAUAGUGGUGAGGAGAAUUU", "CCAUACUCCUCACACACCAAA", [[12, 6] ,[4, 20]]);
-        var show_alignment = VisualizeAlignment.repres(alignment);
-        $el_both_genes.append( "<div class='seq-alignment'><pre>" + show_alignment + "</pre></div>" );
+        var sequence_info = {
+            sequences: "UUUAAAUUAAAAAAUCAUAGAAAAAGUAUCGUUUGAUACUUGUGAUUAUACUCAGUUAUA" +
+                       "CAGUAUCUUAAGGUGUUAUUAAUAGUGGUGAGGAGAAUUUAUGAAGCUUUUCAAAAGCUU" +
+                       "GCUUGUGGCACCUGCAACUCUUGGUCUUUUAGCACCAAUGACCGCUACUGCUAAU&AGGAUGGGGGAAACCCCAUACUCCUCACACACCAAAUCGCCCGAUUUAUCGGGCUUUUUU",
+            dotbrackets: ".....(((((((((((.....&.....)))))))).))).....",
+            startindices: "80&16"
+        };
+        var show_alignment = self.fetchAlignment( sequence_info );
+        $el_both_genes.append( "<div class='interaction-header'>Alignment Information <a href='#' class='download-alignment'" +
+                               "title='Download the alignment as text file'>Download Alignment</a></div>" +
+                               "<div class='seq-alignment'><pre>" + show_alignment + "</pre></div>" );
+
+        // event for downloading alignment as text file
+        self.$( '.download-alignment' ).off( 'click' ).on( 'click', function( e ) {
+             e.preventDefault();
+             e.stopPropagation();
+             self.exportAlignment();
+        });
+    },
+
+    /** Fetch alignment between two sequences */
+    fetchAlignment: function( sequenceInfo ) {
+        var sequences = sequenceInfo.sequences;
+            dot_brackets = sequenceInfo.dotbrackets,
+            start_indices = sequenceInfo.startindices,
+            dotbracket1 = [],
+            docbracket2 = [],
+            alignment_positions = [],
+            dotbracket1_length = 0,
+            dotbracket2_length = 0,
+            startindex1 = 0,
+            startindex2 = 0,
+            viz4d = null,
+            alignment = null;
+
+        sequences = sequences.split( "&" );
+        dot_brackets = dot_brackets.split( "&" );
+        start_indices = start_indices.split( "&" );
+        dotbracket1 = dot_brackets[ 0 ].split( "" );
+        dotbracket2 = dot_brackets[ 1 ].split("");
+        dotbracket1_length = dotbracket1.length;
+        dotbracket2_length = dotbracket2.length;
+        
+        // find corresponding alignment positions using dotbracket notations
+        // look for corresponding opening and closing brackets in both sequences
+        // having second sequence in the reverse order
+        for( var dotbrac1_ctr = 0; dotbrac1_ctr < dotbracket1_length; dotbrac1_ctr++ ) {
+            if ( dotbracket1[ dotbrac1_ctr ] === '(' ) {
+                var align_pos = [];
+                align_pos.push( dotbrac1_ctr + 1 );
+                dotbracket1[ dotbrac1_ctr ] = ".";
+                for( var dotbrac2_ctr = dotbracket2_length; dotbrac2_ctr > 0; dotbrac2_ctr-- ) {
+                    if( dotbracket2[ dotbrac2_ctr ] === ')' ) {
+                        align_pos.push( dotbrac2_ctr + 1 );
+                        alignment_positions.push( align_pos );
+                        dotbracket2[ dotbrac2_ctr ] = '.';
+                        break;
+                    }
+                }
+            }
+        }
+        startindex1 = parseInt( start_indices[ 0 ] );
+        startindex2 = parseInt( start_indices[ 1 ] );
+     
+        // slice the aligning parts of sequences using starting indices
+        sequence1 = sequences[ 0 ].slice( startindex1 - 1, startindex1 + dotbracket1_length - 1 );
+        sequence2 = sequences[ 1 ].slice( startindex2 - 1, startindex2 + dotbracket2_length - 1 );
+ 
+        // get the alignment
+        viz4d = VisualizeAlignment.visualize4d( sequence1, sequence2, alignment_positions );
+        alignment = VisualizeAlignment.repres( viz4d );
+        return alignment;
+    },
+     
+    /** Export the alignment as text file */
+    exportAlignment: function() {
+        var self = this,
+            data = "",
+            link = document.createElement( 'a' );
+        data = self.$( '.seq-alignment' ).text();
+        data = window.encodeURIComponent( data );
+        link.setAttribute( 'href', 'data:application/octet-stream,' + data );
+        link.setAttribute( 'download', Date.now().toString( 16 ) + '_seq_alignment.txt' );
+        document.body.appendChild( link );
+        link_click = link.click();
     },
 
     /** Set to default values */
