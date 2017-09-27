@@ -654,10 +654,7 @@ var InteractionsView = Backbone.View.extend ({
             dotbrackets: ".....(((((((((((.....&.....)))))))).))).....",
             startindices: "80&16"
         };
-        var show_alignment = self.fetchAlignment( sequence_info );
-        $el_both_genes.append( "<div class='interaction-header'>Alignment Information <a href='#' class='download-alignment'" +
-                               "title='Download the alignment as text file'>Download Alignment</a></div>" +
-                               "<div class='seq-alignment'><pre>" + show_alignment + "</pre></div>" );
+        $el_both_genes.append( self._templateAlignment( self.fetchAlignment( sequence_info ) ) );
 
         // event for downloading alignment as text file
         self.$( '.download-alignment' ).off( 'click' ).on( 'click', function( e ) {
@@ -855,6 +852,14 @@ var InteractionsView = Backbone.View.extend ({
                        '<li><p>Score: <b>' + item[ 18 ] + '</b></p></li>' +
 	            '</ul>' +
 	        '</span>';
+    },
+
+    /** Template for showing alignment */
+    _templateAlignment: function( alignment ) {
+        return "<div class='interaction-header'>Alignment Information <a href='#' class='download-alignment'" +
+                   "title='Download the alignment as text file'>Download Alignment</a></div>" +
+                        "<div class='seq-alignment'><pre>" + alignment + "</pre></div>";
+
     }
 });
 
