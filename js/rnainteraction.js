@@ -121,7 +121,7 @@ var AllSamplesView = Backbone.View.extend ({
             var ids = checked_ids.split( "," ),
                 ids_length = ids.length,
                 $el_matrix_loader = self.$( '.matrix-loader' );
-            if ( ids.length > 0) {
+            if ( ids.length > 0 ) {
                 self.$( '#samples-plot' ).hide();
                 self.overlay.show();
                 $el_matrix_loader.show();
@@ -336,7 +336,7 @@ var InteractionsView = Backbone.View.extend ({
     /** Plot pie chart for interactions chosen for summary */
     plotPieChart: function( dict, container, name ) {
         var layout = {
-            height:400,
+            height:450,
             width: 500,
             title: name
         },
@@ -397,7 +397,8 @@ var InteractionsView = Backbone.View.extend ({
             summary_result_type2 = {},
             summary_result_score = [],
             summary_result_score1 = [],
-            summary_result_score2 = [];
+            summary_result_score2 = [],
+            summary_result_energy = [];
 
         self.showHideGeneSections( true );
         _.each( checkboxes, function( item ) {
@@ -415,7 +416,7 @@ var InteractionsView = Backbone.View.extend ({
             for( var ctr_ids = 0; ctr_ids < checked_ids.length; ctr_ids++ ) {
                 for( var ctr = 0; ctr < model_length; ctr++ ) {
                     var item = self.model[ ctr ];
-                    if ( checked_ids[ ctr_ids ] === item[ 0 ] ) {
+                    if ( checked_ids[ ctr_ids ].toString() === item[ 0 ].toString() ) {
                         summary_items.push( item );
                         break;
                     }
@@ -424,16 +425,18 @@ var InteractionsView = Backbone.View.extend ({
             // summary fields - geneid (1 and 2) and type (1 and 2)
             for ( var i = 0; i < summary_items.length; i++ ) {
                 summary_result_type2[ summary_items[ i ][ 9 ] ] = ( summary_result_type2[ summary_items[ i ][ 9 ] ] || 0 ) + 1;
-                summary_result_score1.push( summary_items[ i ][ 16 ] );
-                summary_result_score2.push( summary_items[ i ][ 17 ] );
-                summary_result_score.push( summary_items[ i ][ 18 ] );
+                summary_result_score1.push( summary_items[ i ][ 26 ] );
+                summary_result_score2.push( summary_items[ i ][ 27 ] );
+                summary_result_score.push( summary_items[ i ][ 28 ] );
+                summary_result_energy.push( summary_items[ i ][ 32 ] );
             }
             
             var plottingData = {
                 'family_names_count': summary_result_type2,
                 'score': summary_result_score,
                 'score1': summary_result_score1,
-                'score2': summary_result_score2
+                'score2': summary_result_score2,
+                'energy': summary_result_energy
             };
             self.cleanSummary();
             self.plotInteractions( plottingData );
@@ -451,6 +454,7 @@ var InteractionsView = Backbone.View.extend ({
         self.plotPieChart( data.family_names_count, "rna-type2", 'Gene2 RNA family distribution for ' + self.sampleName );
         self.plotHistogram( data.score1, "rna-score1", 'Score1 distribution for ' + self.sampleName );
         self.plotHistogram( data.score2, "rna-score2", 'Score2 distribution for ' + self.sampleName );
+        self.plotHistogram( data.energy, "rna-energy", 'Energy distribution for ' + self.sampleName );
     },
 
     /** Fetch summary data from server */
@@ -489,6 +493,7 @@ var InteractionsView = Backbone.View.extend ({
                 score: JSON.parse( data[ 1 ] ),
                 score1: JSON.parse( data[ 2 ] ),
                 score2: JSON.parse( data[ 3 ] ),
+                energy: JSON.parse( data[ 4 ] ),
             };
             self.plotInteractions( plotData );
             self.overlay.hide();
@@ -623,12 +628,12 @@ var InteractionsView = Backbone.View.extend ({
 
         // fire when one interaction is selected
         $el_rna_interaction.off( 'click' ).on( 'click', function( e ) {
-            var interaction_id = e.target.parentNode.children[0].id,
+            var interaction_id = e.target.parentNode.children[ 0 ].id,
                 records = self.model;
             self.$( ".rna-pair" ).removeClass( 'selected-item' );
             for( var ctr = 0, len = records.length; ctr < len; ctr++ ) {
                 var item = records[ ctr ];
-                if( item[ 0 ] === interaction_id ) {
+                if( item[ 0 ].toString() === interaction_id.toString() ) {
                     self.$( this ).parent().addClass( ' selected-item' );
                     self.buildInformation( item );
                     break;
@@ -648,11 +653,9 @@ var InteractionsView = Backbone.View.extend ({
         $el_both_genes.append( self._templateInformation( item, "info-gene1", 0 ) );
         $el_both_genes.append( self._templateInformation( item, "info-gene2", 1 ) );
         var sequence_info = {
-            sequences: "UUUAAAUUAAAAAAUCAUAGAAAAAGUAUCGUUUGAUACUUGUGAUUAUACUCAGUUAUA" +
-                       "CAGUAUCUUAAGGUGUUAUUAAUAGUGGUGAGGAGAAUUUAUGAAGCUUUUCAAAAGCUU" +
-                       "GCUUGUGGCACCUGCAACUCUUGGUCUUUUAGCACCAAUGACCGCUACUGCUAAU&AGGAUGGGGGAAACCCCAUACUCCUCACACACCAAAUCGCCCGAUUUAUCGGGCUUUUUU",
-            dotbrackets: ".....(((((((((((.....&.....)))))))).))).....",
-            startindices: "80&16"
+            sequences: item[ 29 ],
+            dotbrackets: item[ 30 ],
+            startindices: "1&1" // sequences in the file are already carved-out
         };
         $el_both_genes.append( self._templateAlignment( self.fetchAlignment( sequence_info ) ) );
 
@@ -686,7 +689,7 @@ var InteractionsView = Backbone.View.extend ({
         dotbracket2 = dot_brackets[ 1 ].split("");
         dotbracket1_length = dotbracket1.length;
         dotbracket2_length = dotbracket2.length;
-        
+
         // find corresponding alignment positions using dotbracket notations
         // look for corresponding opening and closing brackets in both sequences
         // having second sequence in the reverse order
@@ -695,7 +698,7 @@ var InteractionsView = Backbone.View.extend ({
                 var align_pos = [];
                 align_pos.push( dotbrac1_ctr + 1 );
                 dotbracket1[ dotbrac1_ctr ] = ".";
-                for( var dotbrac2_ctr = dotbracket2_length; dotbrac2_ctr > 0; dotbrac2_ctr-- ) {
+                for( var dotbrac2_ctr = dotbracket2_length - 1; dotbrac2_ctr >= 0; dotbrac2_ctr-- ) {
                     if( dotbracket2[ dotbrac2_ctr ] === ')' ) {
                         align_pos.push( dotbrac2_ctr + 1 );
                         alignment_positions.push( align_pos );
@@ -705,15 +708,9 @@ var InteractionsView = Backbone.View.extend ({
                 }
             }
         }
-        startindex1 = parseInt( start_indices[ 0 ] );
-        startindex2 = parseInt( start_indices[ 1 ] );
-     
-        // slice the aligning parts of sequences using starting indices
-        sequence1 = sequences[ 0 ].slice( startindex1 - 1, startindex1 + dotbracket1_length - 1 );
-        sequence2 = sequences[ 1 ].slice( startindex2 - 1, startindex2 + dotbracket2_length - 1 );
- 
+
         // get the alignment
-        viz4d = VisualizeAlignment.visualize4d( sequence1, sequence2, alignment_positions );
+        viz4d = VisualizeAlignment.visualize4d( sequences[ 0 ], sequences[ 1 ], alignment_positions );
         alignment = VisualizeAlignment.repres( viz4d );
         return alignment;
     },
@@ -757,6 +754,7 @@ var InteractionsView = Backbone.View.extend ({
         self.$( "#rna-type2" ).empty();
         self.$( "#rna-score1" ).empty();
         self.$( "#rna-score2" ).empty();
+        self.$( "#rna-energy" ).empty();
         self.$( ".both-genes" ).empty();
     },
 
@@ -804,6 +802,7 @@ var InteractionsView = Backbone.View.extend ({
                        '<div class="col-sm-5 first-gene">' +
                            '<div id="rna-type1"></div>' +
                            '<div id="rna-score1"></div>' +
+                           '<div id="rna-energy"></div>' +
                        '</div>' +
                        '<div class="col-sm-5 second-gene">' +
                            '<div id="rna-type2"></div>' +
@@ -848,8 +847,8 @@ var InteractionsView = Backbone.View.extend ({
 	               '<li><p>Geneid: <b>' + item[ 4 + file_pos ] + '</b></p></li>' +
 	               '<li><p>Symbol: <b>' + item[ 6 + file_pos ] + '</b></p></li>' +
 	               '<li><p>Type: <b>' + item[ 8 + file_pos ] + '</b></p></li>' +
-	               '<li><p>Score'+ (file_pos + 1) +': <b>' + item[ 16 + file_pos ] + '</b></p></li>' +
-                       '<li><p>Score: <b>' + item[ 18 ] + '</b></p></li>' +
+	               '<li><p>Score'+ (file_pos + 1) +': <b>' + item[ 26 + file_pos ] + '</b></p></li>' +
+                       '<li><p>Score: <b>' + item[ 28 ] + '</b></p></li>' +
 	            '</ul>' +
 	        '</span>';
     },

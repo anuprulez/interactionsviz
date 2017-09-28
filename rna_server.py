@@ -6,6 +6,7 @@ import json
 import urlparse
 import pandas as pd
 import numpy as np
+import uuid
 
 
 class RNAInteraction:
@@ -17,7 +18,7 @@ class RNAInteraction:
         self.default_order_by = 'score'
         self.default_ascending = False
         self.searchable_fields = [ 'txid1', 'txid2', 'geneid1', 'geneid2', 'symbol1', 'symbol2', 'type1', 'type2' ]
-        self.number_samples = 9
+        self.number_samples = 5
         self.sample_prefix = 'sample'
         self.sqlite_table_name = 'interactions'
         self.hdf_file_ext = '.hdf'
@@ -32,12 +33,19 @@ class RNAInteraction:
     @classmethod
     def make_samples( self, file_path ):
         """ Take out records for multiple samples """
-        interactions_dataframe = pd.read_table( file_path, sep='\t', header=0 )
-        # random sampling
-        interactions_dataframe = interactions_dataframe.sample( frac=1 ).reset_index( drop=True )
-        # inflate the interactions three-fold
-        frames = [ interactions_dataframe, interactions_dataframe, interactions_dataframe ]
+        interactions_dataframe = pd.read_table( file_path, sep='\t', index_col=False )
+        # inflate the interactions
+        frames = []
+        for x in range(0, 21):
+            frames.append( interactions_dataframe )
         interactions_dataframe = pd.concat( frames )
+
+        # randomly sample the interactions
+        interactions_dataframe = interactions_dataframe.sample( frac=1 ).reset_index( drop=True )
+
+        # add unique id to each interaction
+        interactions_dataframe[ "chimeraid" ] = interactions_dataframe[ "chimeraid" ].apply( lambda x: str( uuid.uuid4() ) )
+
         size_each_file = len(interactions_dataframe) / self.number_samples
         for sample_number in xrange( 0, self.number_samples ):
             fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
@@ -74,6 +82,7 @@ class RNAInteraction:
         score = list()
         score1 = list()
         score2 = list()
+        energy = list()
         for item_x in xrange( 0, len( sample_data ) ):
             row_x = sample_data[ item_x: item_x + 1 ] 
             family_name = row_x[ 'type2' ].values[ 0 ]
@@ -84,12 +93,14 @@ class RNAInteraction:
             score.append( row_x[ 'score' ].values[ 0 ] )
             score1.append( row_x[ 'score1' ].values[ 0 ] )
             score2.append( row_x[ 'score2' ].values[ 0 ] )
+            energy.append( row_x[ 'energy' ].values[ 0 ] )
 
         return {
             'family_names_count': family_names_count,
             'score': score,
             'score1': score1,
-            'score2': score2
+            'score2': score2,
+            'energy': energy
         }
 
     @classmethod
@@ -157,13 +168,6 @@ class RNAInteraction:
                                   all_data[ self.searchable_fields[ 6 ] ].str.lower().str.contains( search_query.lower() ) | \
                                   all_data[ self.searchable_fields[ 7 ] ].str.lower().str.contains( search_query.lower() ) ]
         return filtered_data
-
-    @classmethod
-    def make_summary( self, file_path, summary_record_ids ):
-        """ Select data for making summary plots """
-	ids_pattern = '|'.join( summary_record_ids.split( ',' ) )
-        all_data = self.read_hdf_sample( file_path )
-        return all_data[ all_data[ 'chimeraid' ].str.contains( ids_pattern ) ]
 
     @classmethod
     def filter_data( self, file_path, params ):
@@ -256,6 +260,7 @@ if __name__ == "__main__":
                 content = content + json.dumps( data[ "score" ] ) + '\n'
                 content = content + json.dumps( data[ "score1" ] ) + '\n'
                 content = content + json.dumps( data[ "score2" ] ) + '\n'
+                content = content + json.dumps( data[ "energy" ] ) + '\n'
             elif( "multisamples" in query ):
                 file_names = RNAInteraction.get_sample_names( file_name )
                 for name in file_names:
