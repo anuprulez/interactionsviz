@@ -15,8 +15,6 @@ class RNAInteraction:
     @classmethod
     def __init__( self ):
         """ Init method. """
-        self.default_order_by = 'score'
-        self.default_ascending = False
         self.searchable_fields = [ 'txid1', 'txid2', 'geneid1', 'geneid2', 'symbol1', 'symbol2', 'type1', 'type2' ]
         self.hdf_file_ext = '.hdf'
         self.tsv_file_ext = '.tsv'
@@ -149,9 +147,9 @@ class RNAInteraction:
         return common_interactions
     
     @classmethod
-    def read_hdf_sample( self, file_name ):
+    def read_hdf_sample( self, file_name, sort_by="score", ascending=False ):
         hdfdata = pd.read_hdf( self.dir_path + file_name + self.hdf_file_ext, file_name )
-        return hdfdata.sort_values( by=self.default_order_by, ascending=self.default_ascending )
+        return hdfdata.sort_values( by=sort_by, ascending=ascending )
 
     @classmethod
     def read_from_file( self, file_path ):
@@ -257,6 +255,7 @@ if __name__ == "__main__":
                 matrix = data.find_common( samples, sample_ids )
                 for item in matrix:
                     content += str( item[ 0 ] ) + '\n'
+
             elif( "summary_plot" in query ): 
                 data = RNAInteraction.get_plotting_data( params )
                 content = json.dumps( data[ 'family_names_count' ] ) + '\n'
@@ -264,29 +263,44 @@ if __name__ == "__main__":
                 content = content + json.dumps( data[ "score1" ] ) + '\n'
                 content = content + json.dumps( data[ "score2" ] ) + '\n'
                 content = content + json.dumps( data[ "energy" ] ) + '\n'
+
             elif( "multisamples" in query ):
                 file_names = RNAInteraction.get_sample_names()
                 for name in file_names:
                     content += name + '\n'
+
             elif( "export" in query ):
                 export_data = data.get_search_filter_data( params )
                 if not export_data.empty:
                     for index, row in export_data.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
-                else:
-                    content = ""
+
+            elif( "sort" in query ):
+                sample_name = params[ 'sample_name' ][ 0 ]
+                sort_by = params[ 'sort_by' ][ 0 ]
+                ascending = False
+                if sort_by == 'energy':
+                    ascending = True
+                sorted_data = data.read_hdf_sample( sample_name, sort_by, ascending )
+                total_results = len( sorted_data )
+                if not sorted_data.empty:
+                    content = json.dumps( list( sorted_data.columns ) ) + '\n'
+                    sorted_data = sorted_data[ 1:1001 ]
+                    for index, row in sorted_data.iterrows():
+                        content += row.to_json( orient='records' ) + '\n'
+                    content += str( total_results ) + '\n'
+
             elif( "filter" in query ):
                 sample_name = params[ 'sample_name' ][ 0 ]
                 filtered_data = data.filter_data( sample_name, params )
                 total_results = len(filtered_data)
                 if not filtered_data.empty:
                     content = json.dumps( list(filtered_data.columns) ) + '\n'
-                    filtered_data = filtered_data[1:1001]
+                    filtered_data = filtered_data[ 1:1001 ]
                     for index, row in filtered_data.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
                     content += str(total_results) + '\n'
-                else:
-                    content = ""
+
             elif( "?" in query ):
                 search_by = ""
                 sample_name = params[ 'sample_name' ][ 0 ]

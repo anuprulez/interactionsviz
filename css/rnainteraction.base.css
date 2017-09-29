@@ -161,17 +161,23 @@ body {
 }
 
 #info-gene1, #info-gene2 { padding-top: 2%; display: inline-block; width: 30%; }
-#info-gene1 { margin-right: 25%; }
-#info-gene1 ul li p { padding: 1%; border-left: 1px solid black; font-size: 9pt; }
-#info-gene2 ul li p { padding: 1%; border-left: 1px solid black; font-size: 9pt; }
+#info-gene1 { margin: 0 25% 0 2%; }
+#info-gene1 p { padding: 1%;  }
+#info-gene2 p { padding: 1%; }
 
 .seq-alignment > pre {
     margin: 0;
     font-size: 11pt;
     background-color: white;
     border: none;
-    padding: 4% 0 0 30%;
+    padding: 1% 0 0 30%;
     color: green;
+}
+
+.seq-alignment > .alignment-energy {
+    padding: 2% 0 0 45%;
+    color: red;
+    font-size: 11pt;
 }
 
 .samples-overlay {

@@ -5,6 +5,13 @@ function createFancyScroll( class_name ) {
     $( '.' + class_name + ' .mCSB_dragger_bar' ).css( 'background-color', 'black' );
 }
 
+function roundPrecision( number, precision ) {
+    var factor = Math.pow( 10, precision ),
+        numberFac = number * factor,
+        roundedNum = Math.round( numberFac );
+    return roundedNum / factor;
+};
+
 var HeaderView = Backbone.View.extend ({
     el: ".main-container",
 
@@ -297,9 +304,12 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Sort the interactions default by score in descending order */
     sortInteractions: function( e ) {
-        var self = this;
+        var self = this,
+            value = e.target.value,
+            url = "";
         e.preventDefault();
-        self.showInteractions( "" );
+        url = "http://" + self.host + ":" + self.port + "/?sort=true&sample_name="+ self.sampleName + "&sort_by=" + value  
+        self.showInteractions( "", url );
     },
 
     /** Filter the interactions using filter types */
@@ -608,6 +618,7 @@ var InteractionsView = Backbone.View.extend ({
                 // save only the data records
                 self.model = rna_records.slice( 1, );
                 self.buildLeftPanel( self.model );
+                self.setToDefaults();
             }
             else {
                 self.$( '.transcriptions-ids' ).html( "<div> No results found. </div>" );
@@ -680,7 +691,8 @@ var InteractionsView = Backbone.View.extend ({
     /** Make information list of the selected interaction */
     buildInformation: function( item ) {
         var self = this,
-            $el_both_genes = self.$( ".both-genes" );
+            $el_both_genes = self.$( ".both-genes" ),
+            energyExpr = window.decodeURI("\u0394") + "G" + " = " +  item[ 32 ] + " kcal/mol";;
         self.cleanSummary();
         $el_both_genes.empty();
         self.showHideGeneSections( false );
@@ -692,7 +704,7 @@ var InteractionsView = Backbone.View.extend ({
             dotbrackets: item[ 30 ],
             startindices: "1&1" // sequences in the file are already carved-out
         };
-        $el_both_genes.append( self._templateAlignment( self.fetchAlignment( sequence_info ) ) );
+        $el_both_genes.append( self._templateAlignment( self.fetchAlignment( sequence_info ), energyExpr ) );
 
         // event for downloading alignment as text file
         self.$( '.download-alignment' ).off( 'click' ).on( 'click', function( e ) {
@@ -755,7 +767,7 @@ var InteractionsView = Backbone.View.extend ({
         var self = this,
             data = "",
             link = document.createElement( 'a' );
-        data = self.$( '.seq-alignment' ).text();
+        data = self.$( '.pre-align' ).text();
         data = window.encodeURIComponent( data );
         link.setAttribute( 'href', 'data:application/octet-stream,' + data );
         link.setAttribute( 'download', Date.now().toString( 16 ) + '_seq_alignment.txt' );
@@ -807,6 +819,7 @@ var InteractionsView = Backbone.View.extend ({
                            '<select name="sort" class="rna-sort elem-rna form-control elem-rna" title="Sort">' +
                                '<option value="">Sort by...</option>' +
 	                       '<option value="score" selected>Score</option>' +
+                               '<option value="energy" selected>Energy</option>' +
                            '</select>' +
                        '</div>' +
                        '<div class="col-sm-6 elem-rna">' +
@@ -878,22 +891,20 @@ var InteractionsView = Backbone.View.extend ({
     /** Template for showing information of the selected interaction */
     _templateInformation: function( item, id, file_pos, header_text ) {
         return '<span id="'+ id +'">' +
-	           '<ul>' +
-	               '<li><p>Geneid: <b>' + item[ 4 + file_pos ] + '</b></p></li>' +
-	               '<li><p>Symbol: <b>' + item[ 6 + file_pos ] + '</b></p></li>' +
-	               '<li><p>Type: <b>' + item[ 8 + file_pos ] + '</b></p></li>' +
-	               '<li><p>Score'+ (file_pos + 1) +': <b>' + item[ 26 + file_pos ] + '</b></p></li>' +
-                       '<li><p>Score: <b>' + item[ 28 ] + '</b></p></li>' +
-	            '</ul>' +
+	               '<p><b>Geneid</b>: ' + item[ 4 + file_pos ] + '</p>' +
+	               '<p><b>Symbol</b>: ' + item[ 6 + file_pos ] + '</p>' +
+	               '<p><b>Type</b>: ' + item[ 8 + file_pos ] + '</p>' +
+                       '<p><b>Gene Expression </b>: ' + roundPrecision( parseFloat( item[ 24 + file_pos ] ), 1 ) + '</p>' +
+	               '<p><b>Score'+ (file_pos + 1) + '</b>: ' + roundPrecision( parseFloat( item[ 26 + file_pos ] ), 1 ) + '</p>' +
+                       '<p><b>Score</b>: ' + roundPrecision( parseFloat( item[ 28 ] ), 1 ) + '</p>' +
 	        '</span>';
     },
 
     /** Template for showing alignment */
-    _templateAlignment: function( alignment ) {
+    _templateAlignment: function( alignment, energyExpr ) {
         return "<div class='interaction-header'>Alignment Information <a href='#' class='download-alignment'" +
                    "title='Download the alignment as text file'>Download Alignment</a></div>" +
-                        "<div class='seq-alignment'><pre>" + alignment + "</pre></div>";
-
+                        "<div class='seq-alignment'><pre class='pre-align'>" + alignment + "</pre><div class='alignment-energy'>" + energyExpr + "</div></div>";
     }
 });
 
