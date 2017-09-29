@@ -26,9 +26,10 @@ class RNAInteraction:
     @classmethod
     def get_sample_names( self, file_name ):
         """ Get all the file names of the samples """
-        self.make_samples( file_name )
-        file_names = [ file.split( '.' )[ 0 ] for file in os.listdir( '.' ) if file.startswith( self.sample_prefix ) ]
-        return sorted( file_names, key=str.lower )
+        files = [ file.split( '.' )[ 0 ] for file in os.listdir( '.' ) if file.startswith( self.sample_prefix ) ]
+        if len( files ) == 0:
+            files = self.make_samples( file_name )
+        return sorted( files, key = str.lower )
 
     @classmethod
     def make_samples( self, file_path ):
@@ -52,6 +53,8 @@ class RNAInteraction:
             file_name = self.sample_prefix + str( sample_number + 1 ) + self.hdf_file_ext
             if not os.path.isfile( file_name ):
                 fraction_data.to_hdf( file_name, self.sample_prefix + str( sample_number + 1 ), mode="w", complib='blosc', index=None )
+
+        return [ file.split( '.' )[ 0 ] for file in os.listdir( '.' ) if file.startswith( self.sample_prefix ) ]
  
     @classmethod
     def read_samples( self, sample_ids ):
@@ -268,10 +271,13 @@ if __name__ == "__main__":
             elif( "filter" in query ):
                 sample_name = params[ 'sample_name' ][ 0 ]
                 filtered_data = data.filter_data( sample_name, params )
+                total_results = len(filtered_data)
                 if not filtered_data.empty:
                     content = json.dumps( list(filtered_data.columns) ) + '\n'
+                    filtered_data = filtered_data[1:1001]
                     for index, row in filtered_data.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
+                    content += str(total_results) + '\n'
                 else:
                     content = ""
             elif( "?" in query ):
@@ -283,9 +289,12 @@ if __name__ == "__main__":
                 else:
                     results = data.read_from_file( sample_name )
                 if not results.empty:
+                    total_results = len(results)
+                    results = results[1:1001]
                     content = json.dumps( list(results.columns) ) + '\n'
                     for index, row in results.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
+                    content += str(total_results) + '\n'
                 else:
                     content = ""
             else:

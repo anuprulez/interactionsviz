@@ -217,6 +217,7 @@ var InteractionsView = Backbone.View.extend ({
        this.modelHeaders = [];
        this.model = [];
        this.sampleName = options.sampleName;
+       this.totalInteractions = 0;
        this.toShow = 1000;
        this.overlay = this.$( '.loader' );
        this.render( options );
@@ -564,6 +565,8 @@ var InteractionsView = Backbone.View.extend ({
             if( result.length > 0 ) {
                 var records = result.split( "\n" ),
                     rna_records = [];
+                // set total interactions
+                self.totalInteractions = parseInt( records[ records.length - 1 ] );
                 // create template for all pairs
                 _.each(records, function( record ) {
                     rna_records.push( JSON.parse( record ) );
@@ -592,7 +595,7 @@ var InteractionsView = Backbone.View.extend ({
  
         // show how many records being shown
         if( records.length >= self.toShow ) {
-            records_size_text = "Showing <b>" + self.toShow + "</b> interactions of <b>" + records.length + "</b>";
+            records_size_text = "Showing <b>" + self.toShow + "</b> interactions of <b>" + self.totalInteractions + "</b>";
         }
         else {
             records_size_text = "Showing only <b>" + records.length + " </b>interactions";
