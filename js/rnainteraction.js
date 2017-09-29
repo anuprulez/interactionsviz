@@ -481,7 +481,7 @@ var InteractionsView = Backbone.View.extend ({
                 queryString = "&filter_type=" + filterType + "&filter_op=" + filterOperator + "&filter_value=" + filterValue;
             }
         }
-        url = "http://" + self.host + ":" + self.port + "/?plot_sample_name=" + self.sampleName + queryString;
+        url = "http://" + self.host + ":" + self.port + "/?summary_plot=true&sample_name=" + self.sampleName + queryString;
         self.cleanSummary();
         self.showHideGeneSections( true );
         self.$( '#rna-type1' ).append( "<p class='plot-loader'>Loading plots. Please wait...</p>" );
@@ -525,17 +525,49 @@ var InteractionsView = Backbone.View.extend ({
         var tsv_data = "",
             link = document.createElement( 'a' ),
             file_name = Date.now().toString( 16 ) + '_results.tsv',
-            self = this;
-        // add headers to the tsv file
-        tsv_data = self.modelHeaders.join( "\t" ) + "\n";
-        _.each( self.model, function( item ) {
-            tsv_data = tsv_data + item.join( "\t" ) + "\n";
+            self = this,
+            url = "",
+            queryString = "",
+            $el_search_gene = self.$( '.search-gene' ),
+            $el_filter_type = self.$( '.rna-filter' ),
+            $el_filter_operator = self.$( '.filter-operator' ),
+            $el_filter_value = self.$( '.filter-value' ),
+            filterType = $el_filter_type.find( ":selected" ).val();
+
+        self.overlay.show();
+        // take into account if the filters are active while fetching 
+        // summary data and build url accordingly
+        if ( $el_search_gene.val() !== "" ) {
+            queryString = "&search_by=" + $el_search_gene.val();
+        }
+        else {
+            if ( filterType !== "-1" ) {
+                var filterOperator = $el_filter_operator.find( ":selected" ).val();
+                var filterValue = self.$( '.filter-value' ).val();
+                queryString = "&filter_type=" + filterType + "&filter_op=" + filterOperator + "&filter_value=" + filterValue;
+            }
+        }
+        url = "http://" + self.host + ":" + self.port + "/?export=true&sample_name=" + self.sampleName + queryString;
+        $.get( url, function( data ) {
+            var inte_records = [];
+            data = data.split( "\n" );                   
+            // create template for all pairs
+            _.each(data, function( record ) {
+                inte_records.push( JSON.parse( record ) );
+            });
+            // add headers to the tsv file
+            tsv_data = self.modelHeaders.join( "\t" ) + "\n";
+            _.each( inte_records, function( item ) {
+                tsv_data = tsv_data + item.join( "\t" ) + "\n";
+            });
+          
+            tsv_data = window.encodeURIComponent( tsv_data );
+            link.setAttribute( 'href', 'data:application/octet-stream,' + tsv_data );
+            link.setAttribute( 'download', file_name );
+            document.body.appendChild( link );
+            link_click = link.click();
+            self.overlay.hide();
         });
-        tsv_data = window.encodeURIComponent( tsv_data );
-        link.setAttribute( 'href', 'data:application/octet-stream,' + tsv_data );
-        link.setAttribute( 'download', file_name );
-        document.body.appendChild( link );
-        link_click = link.click();
     },
 
     /** Callback for the reset filter button */

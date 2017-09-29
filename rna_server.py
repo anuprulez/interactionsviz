@@ -18,43 +18,39 @@ class RNAInteraction:
         self.default_order_by = 'score'
         self.default_ascending = False
         self.searchable_fields = [ 'txid1', 'txid2', 'geneid1', 'geneid2', 'symbol1', 'symbol2', 'type1', 'type2' ]
-        self.number_samples = 5
-        self.sample_prefix = 'sample'
-        self.sqlite_table_name = 'interactions'
         self.hdf_file_ext = '.hdf'
+        self.tsv_file_ext = '.tsv'
+        self.dir_path = './data/'
+        self.max_file_name_len = 30
 
     @classmethod
-    def get_sample_names( self, file_name ):
+    def remove_hdf_files( self ):
+        old_hdf_files = os.listdir( self.dir_path )
+        for item in old_hdf_files:
+            if item.endswith( self.hdf_file_ext ):
+                os.remove( self.dir_path + item )
+
+    @classmethod
+    def get_sample_names( self ):
         """ Get all the file names of the samples """
-        files = [ file.split( '.' )[ 0 ] for file in os.listdir( '.' ) if file.startswith( self.sample_prefix ) ]
-        if len( files ) == 0:
-            files = self.make_samples( file_name )
-        return sorted( files, key = str.lower )
+        if os.path.exists( self.dir_path ):
+            self.remove_hdf_files()
+            files = [ file.split( '.' )[ 0 ] for file in os.listdir( self.dir_path ) if file.endswith( self.tsv_file_ext ) ]
+            hdf_files = self.make_samples( files )
+            return sorted( hdf_files, key = str.lower )
 
     @classmethod
-    def make_samples( self, file_path ):
+    def make_samples( self, files ):
         """ Take out records for multiple samples """
-        interactions_dataframe = pd.read_table( file_path, sep='\t', index_col=False )
-        # inflate the interactions
-        frames = []
-        for x in range(0, 21):
-            frames.append( interactions_dataframe )
-        interactions_dataframe = pd.concat( frames )
-
-        # randomly sample the interactions
-        interactions_dataframe = interactions_dataframe.sample( frac=1 ).reset_index( drop=True )
-
-        # add unique id to each interaction
-        interactions_dataframe[ "chimeraid" ] = interactions_dataframe[ "chimeraid" ].apply( lambda x: str( uuid.uuid4() ) )
-
-        size_each_file = len(interactions_dataframe) / self.number_samples
-        for sample_number in xrange( 0, self.number_samples ):
-            fraction_data = interactions_dataframe[ size_each_file * sample_number: size_each_file + sample_number * size_each_file ]
-            file_name = self.sample_prefix + str( sample_number + 1 ) + self.hdf_file_ext
-            if not os.path.isfile( file_name ):
-                fraction_data.to_hdf( file_name, self.sample_prefix + str( sample_number + 1 ), mode="w", complib='blosc', index=None )
-
-        return [ file.split( '.' )[ 0 ] for file in os.listdir( '.' ) if file.startswith( self.sample_prefix ) ]
+        for item in files:
+            table_file_path = self.dir_path + item + self.tsv_file_ext
+            item = item[ 0:self.max_file_name_len ]
+            hdf_file_name = item + self.hdf_file_ext
+            interactions_dataframe = pd.read_table( table_file_path, sep='\t', index_col=False )
+            interactions_dataframe.to_hdf( self.dir_path + hdf_file_name, item, mode="w", complib='blosc', index=None )    
+            # add unique id to each interaction
+            interactions_dataframe[ "chimeraid" ] = interactions_dataframe[ "chimeraid" ].apply( lambda x: str( uuid.uuid4() ) )
+        return [ file.split( '.' )[ 0 ] for file in os.listdir( self.dir_path ) if file.endswith( self.hdf_file_ext ) ]
  
     @classmethod
     def read_samples( self, sample_ids ):
@@ -63,15 +59,14 @@ class RNAInteraction:
         samples = dict()
         for item in sample_ids:
             samples[ item ] = list()
-            sample_data = pd.read_hdf( item + self.hdf_file_ext, item, index=None )
+            sample_data = pd.read_hdf( self.dir_path + item + self.hdf_file_ext, item, index=None )
             samples[ item ] = sample_data
         return samples
 
     @classmethod
-    def get_plotting_data( self, params ):
-        """ Generate data for plotting """
-
-        sample_name = params[ 'plot_sample_name' ][ 0 ]
+    def get_search_filter_data( self, params ):
+        """ Get searched or fileted or original data based on querystring """
+        sample_name = params[ 'sample_name' ][ 0 ]
         search_by = None
         filter_type = None
         if 'search_by' in params:
@@ -79,8 +74,13 @@ class RNAInteraction:
         elif 'filter_type' in params:
            sample_data = self.filter_data( sample_name, params )
         else:
-           sample_data = pd.read_hdf( sample_name + self.hdf_file_ext, sample_name, index=None )
-        
+           sample_data = pd.read_hdf( self.dir_path + sample_name + self.hdf_file_ext, sample_name, index=None )
+        return sample_data
+
+    @classmethod
+    def get_plotting_data( self, params ):
+        """ Generate data for plotting """
+        sample_data = self.get_search_filter_data( params )
         family_names_count = dict()
         score = list()
         score1 = list()
@@ -150,7 +150,7 @@ class RNAInteraction:
     
     @classmethod
     def read_hdf_sample( self, file_name ):
-        hdfdata = pd.read_hdf( file_name + self.hdf_file_ext, file_name )
+        hdfdata = pd.read_hdf( self.dir_path + file_name + self.hdf_file_ext, file_name )
         return hdfdata.sort_values( by=self.default_order_by, ascending=self.default_ascending )
 
     @classmethod
@@ -257,7 +257,7 @@ if __name__ == "__main__":
                 matrix = data.find_common( samples, sample_ids )
                 for item in matrix:
                     content += str( item[ 0 ] ) + '\n'
-            elif( "plot_sample_name" in query ): 
+            elif( "summary_plot" in query ): 
                 data = RNAInteraction.get_plotting_data( params )
                 content = json.dumps( data[ 'family_names_count' ] ) + '\n'
                 content = content + json.dumps( data[ "score" ] ) + '\n'
@@ -265,9 +265,16 @@ if __name__ == "__main__":
                 content = content + json.dumps( data[ "score2" ] ) + '\n'
                 content = content + json.dumps( data[ "energy" ] ) + '\n'
             elif( "multisamples" in query ):
-                file_names = RNAInteraction.get_sample_names( file_name )
+                file_names = RNAInteraction.get_sample_names()
                 for name in file_names:
                     content += name + '\n'
+            elif( "export" in query ):
+                export_data = data.get_search_filter_data( params )
+                if not export_data.empty:
+                    for index, row in export_data.iterrows():
+                        content += row.to_json( orient='records' ) + '\n'
+                else:
+                    content = ""
             elif( "filter" in query ):
                 sample_name = params[ 'sample_name' ][ 0 ]
                 filtered_data = data.filter_data( sample_name, params )
