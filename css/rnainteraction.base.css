@@ -160,24 +160,37 @@ body {
     font-weight: normal;
 }
 
-#info-gene1, #info-gene2 { padding-top: 2%; display: inline-block; width: 30%; }
-#info-gene1 { margin: 0 25% 0 2%; }
-#info-gene1 p { padding: 1%;  }
-#info-gene2 p { padding: 1%; }
+p {
+    margin: 0;
+}
+
+#info-gene1, #info-gene2 {
+    padding-top: 1%;
+    display: inline-block;
+    width: 30%;
+}
+
+#info-gene1 {
+    margin: 0 25% 0 1%;
+}
+
+canvas {
+    height: 150px;
+}
 
 .seq-alignment > pre {
     margin: 0;
-    font-size: 11pt;
+    font-size: 9pt;
     background-color: white;
     border: none;
     padding: 1% 0 0 30%;
     color: green;
 }
 
-.seq-alignment > .alignment-energy {
-    padding: 2% 0 0 45%;
+.alignment-energy {
+    padding: 1% 0 0 40%;
     color: red;
-    font-size: 11pt;
+    font-size: 9pt;
 }
 
 .samples-overlay {

@@ -242,6 +242,7 @@ var InteractionsView = Backbone.View.extend ({
        self.$el.append( self._templateInteractions( options ) );
        self.$( '.one-sample' ).show();
        self.registerPageEvents();
+       self.setToDefaults();
        self.showInteractions( "" );
     },
 
@@ -618,7 +619,6 @@ var InteractionsView = Backbone.View.extend ({
                 // save only the data records
                 self.model = rna_records.slice( 1, );
                 self.buildLeftPanel( self.model );
-                self.setToDefaults();
             }
             else {
                 self.$( '.transcriptions-ids' ).html( "<div> No results found. </div>" );
@@ -699,6 +699,7 @@ var InteractionsView = Backbone.View.extend ({
         $el_both_genes.append( "<div class='interaction-header'>Genes Information </div>" );
         $el_both_genes.append( self._templateInformation( item, "info-gene1", 0 ) );
         $el_both_genes.append( self._templateInformation( item, "info-gene2", 1 ) );
+        self.buildAligmentGraphics( item );
         var sequence_info = {
             sequences: item[ 29 ],
             dotbrackets: item[ 30 ],
@@ -712,6 +713,78 @@ var InteractionsView = Backbone.View.extend ({
              e.stopPropagation();
              self.exportAlignment();
         });
+    },
+
+    /** Build alignment graphics */
+    buildAligmentGraphics: function( item ) {
+        var self = this,
+            dataCanvas = {};
+
+        // first gene
+        dataCanvas = {
+            startPos: item[ 10 ],
+            endPos: item[ 11 ],
+            seqLength: item[ 12 ],
+            scale: item[ 12 ],
+            $elem: document.getElementById( "align-pos-1" )
+        }
+        self.drawCanvas( dataCanvas );
+
+        // second gene
+        dataCanvas = {
+            startPos: item[ 13 ],
+            endPos: item[ 14 ],
+            seqLength: item[ 15 ],
+            scale: 250,
+            $elem: document.getElementById( "align-pos-2" )
+        }
+        self.drawCanvas( dataCanvas );
+    },
+
+    /** Draw alignment using HTML5 canvas */
+    drawCanvas: function( data ) {
+        var scale = data.scale,
+            ratio = scale / data.seqLength,
+            scaledBegin = parseInt( ratio * data.startPos ),
+	    scaledEnd = parseInt( ratio * data.endPos ),
+            startYPos = 30,
+            textYDiff = 10;
+
+	var context1 = data.$elem.getContext( "2d" );
+	context1.beginPath();
+	context1.font = '8pt verdana';
+
+        // first draw a black line of length equal to scale
+	context1.strokeStyle = 'black';
+	context1.moveTo( 0, startYPos );
+        context1.lineTo( scale, startYPos );
+
+	context1.textBaseline = "top";
+	context1.fillText( 0, 0, startYPos + textYDiff );
+	
+	//context1.textBaseline = "bottom";
+        //context1.textAlign = "right";
+	//context1.fillText( data.startPos, scaledBegin, startYPos - textYDiff );
+
+	//context1.textBaseline = "top";
+        //context1.textAlign = "left";
+	//context1.fillText( data.endPos, scaledBegin + data.endPos - data.startPos, startYPos + textYDiff );
+
+	context1.textBaseline = "top";
+	context1.fillText( data.seqLength, parseInt( scale ), startYPos + textYDiff );
+	context1.stroke();
+
+        // on the black line, redraw a red line using the aligning positions 
+	var context2 = data.$elem.getContext( "2d" );
+	context2.beginPath();
+	context2.moveTo( scaledBegin, startYPos );
+	context2.lineTo( scaledBegin + data.endPos - data.startPos, startYPos );
+	context2.strokeStyle = 'green';
+	context2.lineWidth = 10;
+        context2.shadowColor = 'black';
+        context2.shadowOffsetY = 1;
+        context2.shadowBlur = 10;
+        context2.stroke();
     },
 
     /** Fetch alignment between two sequences */
@@ -896,7 +969,7 @@ var InteractionsView = Backbone.View.extend ({
 	               '<p><b>Type</b>: ' + item[ 8 + file_pos ] + '</p>' +
                        '<p><b>Gene Expression </b>: ' + roundPrecision( parseFloat( item[ 24 + file_pos ] ), 1 ) + '</p>' +
 	               '<p><b>Score'+ (file_pos + 1) + '</b>: ' + roundPrecision( parseFloat( item[ 26 + file_pos ] ), 1 ) + '</p>' +
-                       '<p><b>Score</b>: ' + roundPrecision( parseFloat( item[ 28 ] ), 1 ) + '</p>' +
+                       '<p><b>Gene Aligning Positions:</b></p><canvas id=align-pos-'+ (file_pos + 1) +' title="Gene aligning positions"></canvas>' +
 	        '</span>';
     },
 
@@ -904,7 +977,8 @@ var InteractionsView = Backbone.View.extend ({
     _templateAlignment: function( alignment, energyExpr ) {
         return "<div class='interaction-header'>Alignment Information <a href='#' class='download-alignment'" +
                    "title='Download the alignment as text file'>Download Alignment</a></div>" +
-                        "<div class='seq-alignment'><pre class='pre-align'>" + alignment + "</pre><div class='alignment-energy'>" + energyExpr + "</div></div>";
+                        "<span class='alignment-energy'>" + energyExpr + "</span>" +
+                        "<div class='seq-alignment'><pre class='pre-align'>" + alignment + "</pre></div>";
     }
 });
 
