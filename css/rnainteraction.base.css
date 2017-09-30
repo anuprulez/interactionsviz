@@ -193,6 +193,19 @@ canvas {
     font-size: 9pt;
 }
 
+.alignment1-canvas {
+    margin-left: 35%;
+}
+
+.alignment2-canvas {
+    margin-left: 25%;
+}
+
+#rna-alignment-graphics1 p, #rna-alignment-graphics2 p {
+    margin-left: 28%;
+    font-size: 13pt;
+}
+
 .samples-overlay {
     display: none;
     position: absolute;

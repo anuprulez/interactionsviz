@@ -410,7 +410,9 @@ var InteractionsView = Backbone.View.extend ({
             summary_result_score = [],
             summary_result_score1 = [],
             summary_result_score2 = [],
-            summary_result_energy = [];
+            summary_result_energy = [],
+            summary_result_alignment1 = [],
+            summary_result_alignment2 = [];
 
         self.showHideGeneSections( true );
         _.each( checkboxes, function( item ) {
@@ -441,6 +443,20 @@ var InteractionsView = Backbone.View.extend ({
                 summary_result_score2.push( summary_items[ i ][ 27 ] );
                 summary_result_score.push( summary_items[ i ][ 28 ] );
                 summary_result_energy.push( summary_items[ i ][ 32 ] );
+ 
+                var alignmentSummary1 = {
+                    startPos: summary_items[ i ][ 10 ],
+                    endPos: summary_items[ i ][ 11 ],
+                    seqLength: summary_items[ i ][ 12 ]
+                };
+                var alignmentSummary2 = {
+                    startPos: summary_items[ i ][ 13 ],
+                    endPos: summary_items[ i ][ 14 ],
+                    seqLength: summary_items[ i ][ 15 ]
+                };
+
+                summary_result_alignment1.push( alignmentSummary1 );
+                summary_result_alignment2.push( alignmentSummary2 );
             }
             
             var plottingData = {
@@ -452,6 +468,7 @@ var InteractionsView = Backbone.View.extend ({
             };
             self.cleanSummary();
             self.plotInteractions( plottingData );
+            self.makeAlignmentSummary( summary_result_alignment1, summary_result_alignment2 );
         }
     },
 
@@ -467,6 +484,32 @@ var InteractionsView = Backbone.View.extend ({
         self.plotHistogram( data.score1, "rna-score1", 'Score1 distribution for ' + self.sampleName );
         self.plotHistogram( data.score2, "rna-score2", 'Score2 distribution for ' + self.sampleName );
         self.plotHistogram( data.energy, "rna-energy", 'Energy distribution for ' + self.sampleName );
+    },
+
+    /** Make alignment graphics summary for all checked items*/
+    makeAlignmentSummary: function( alignment1, alignment2 ) {
+        var self = this;
+        self.$( '#rna-alignment-graphics1' ).append( "<p>Alignment positions on gene1<p>" );
+        self.$( '#rna-alignment-graphics2' ).append( "<p>Alignment positions on gene2<p>" );
+        for( var counter = 0, len = alignment1.length; counter < len; counter++ ) {
+            // summary for gene1
+            var canvasId1 = "align1-canvas-" + counter;
+            var dataCanvas1 = alignment1[ counter ];
+            self.$( '#rna-alignment-graphics1' ).append( "<canvas id="+ canvasId1 +" title='Gene alignment positions'></canvas>" );
+            dataCanvas1.scale = dataCanvas1.seqLength;
+            dataCanvas1.$elem = document.getElementById( canvasId1 );
+            self.$( '#' + canvasId1 ).addClass( 'alignment1-canvas' );
+            self.drawCanvas( dataCanvas1 );
+ 
+            // summary for gene2
+            var canvasId2 = "align2-canvas-" + counter;
+            var dataCanvas2 = alignment2[ counter ];
+            self.$( '#rna-alignment-graphics2' ).append( "<canvas id="+ canvasId2 +" title='Gene alignment positions'></canvas>" );
+            dataCanvas2.scale = 250;
+            dataCanvas2.$elem = document.getElementById( canvasId2 );
+            self.$( '#' + canvasId2 ).addClass( 'alignment2-canvas' );
+            self.drawCanvas( dataCanvas2 );
+        }
     },
 
     /** Fetch summary data from server */
@@ -609,7 +652,9 @@ var InteractionsView = Backbone.View.extend ({
                 var records = result.split( "\n" ),
                     rna_records = [];
                 // set total interactions
-                self.totalInteractions = parseInt( records[ records.length - 1 ] );
+                self.totalInteractions = parseInt( records[ 0 ] );
+                // remove the total records item
+                records = records.slice( 1, );
                 // create template for all pairs
                 _.each(records, function( record ) {
                     rna_records.push( JSON.parse( record ) );
@@ -876,6 +921,8 @@ var InteractionsView = Backbone.View.extend ({
         self.$( "#rna-score2" ).empty();
         self.$( "#rna-energy" ).empty();
         self.$( ".both-genes" ).empty();
+        self.$( "#rna-alignment-graphics1" ).empty();
+        self.$( "#rna-alignment-graphics2" ).empty();
     },
 
     _templateInteractions: function( options ) {
@@ -924,10 +971,12 @@ var InteractionsView = Backbone.View.extend ({
                            '<div id="rna-type1"></div>' +
                            '<div id="rna-score1"></div>' +
                            '<div id="rna-energy"></div>' +
+                           '<div id="rna-alignment-graphics1"></div>' +
                        '</div>' +
                        '<div class="col-sm-5 second-gene">' +
                            '<div id="rna-type2"></div>' +
                            '<div id="rna-score2"></div>' +
+                           '<div id="rna-alignment-graphics2"></div>' +
                        '</div>' +
                    '</div>' +
                    '<div class="row">' +

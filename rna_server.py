@@ -284,22 +284,22 @@ if __name__ == "__main__":
                 sorted_data = data.read_hdf_sample( sample_name, sort_by, ascending )
                 total_results = len( sorted_data )
                 if not sorted_data.empty:
-                    content = json.dumps( list( sorted_data.columns ) ) + '\n'
-                    sorted_data = sorted_data[ 1:1001 ]
+                    content = str( total_results ) + '\n'
+                    content += json.dumps( list( sorted_data.columns ) ) + '\n'
+                    sorted_data = sorted_data[ 1:1001 ] if len( sorted_data ) > 1000 else sorted_data
                     for index, row in sorted_data.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
-                    content += str( total_results ) + '\n'
 
             elif( "filter" in query ):
                 sample_name = params[ 'sample_name' ][ 0 ]
                 filtered_data = data.filter_data( sample_name, params )
-                total_results = len(filtered_data)
+                total_results = len( filtered_data )
                 if not filtered_data.empty:
-                    content = json.dumps( list(filtered_data.columns) ) + '\n'
-                    filtered_data = filtered_data[ 1:1001 ]
+                    content = str( total_results ) + '\n'
+                    content += json.dumps( list(filtered_data.columns) ) + '\n'
+                    filtered_data = filtered_data[ 1:1001 ] if len( filtered_data ) > 1000 else filtered_data
                     for index, row in filtered_data.iterrows():
-                        content += row.to_json( orient='records' ) + '\n'
-                    content += str(total_results) + '\n'
+                        content += row.to_json( orient='records' ) + '\n'  
 
             elif( "?" in query ):
                 search_by = ""
@@ -310,12 +310,12 @@ if __name__ == "__main__":
                 else:
                     results = data.read_from_file( sample_name )
                 if not results.empty:
-                    total_results = len(results)
-                    results = results[1:1001]
-                    content = json.dumps( list(results.columns) ) + '\n'
+                    total_results = len( results )
+                    results = results[ 1:1001 ] if len( results ) > 1000 else results
+                    content = str( total_results ) + '\n'
+                    content += json.dumps( list(results.columns) ) + '\n'
                     for index, row in results.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
-                    content += str(total_results) + '\n'
                 else:
                     content = ""
             else:
