@@ -370,7 +370,6 @@ var InteractionsView = Backbone.View.extend ({
             labels.push( item );
             values.push( dict[ item ] ); 
         }
-
         var data = [{
             values: values,
             labels: labels,
@@ -484,8 +483,13 @@ var InteractionsView = Backbone.View.extend ({
                 'rnaexpr2': summary_result_gene_expr2
             };
             self.cleanSummary();
-            self.plotInteractions( plottingData );
-            self.makeAlignmentSummary( summary_result_alignment1, summary_result_alignment2 );
+            var plotPromise = new Promise( function( resolve, reject ) {
+                resolve( self.plotInteractions( plottingData ) );
+            });
+
+            var alignPromise = plotPromise.then( function() {
+                 self.makeAlignmentSummary( summary_result_alignment1, summary_result_alignment2 );
+            });
         }
     },
 
@@ -508,8 +512,10 @@ var InteractionsView = Backbone.View.extend ({
     /** Make alignment graphics summary for all checked items*/
     makeAlignmentSummary: function( alignment1, alignment2 ) {
         var self = this;
-        self.$( '#rna-alignment-graphics1' ).append( "<p>Alignment positions on gene1<p>" );
-        self.$( '#rna-alignment-graphics2' ).append( "<p>Alignment positions on gene2<p>" );
+        self.$( '#rna-alignment-graphics1' ).empty();
+        self.$( '#rna-alignment-graphics2' ).empty();
+        self.$( '#rna-alignment-graphics1' ).append( "<p>Alignment positions for " + alignment1.length + " interactions on gene1<p>" );
+        self.$( '#rna-alignment-graphics2' ).append( "<p>Alignment positions for " + alignment1.length + " interactions on gene2<p>" );
         for( var counter = 0, len = alignment1.length; counter < len; counter++ ) {
             // summary for gene1
             var canvasId1 = "align1-canvas-" + counter;
@@ -570,11 +576,46 @@ var InteractionsView = Backbone.View.extend ({
                 score2: JSON.parse( data[ 3 ] ),
                 energy: JSON.parse( data[ 4 ] ),
                 rnaexpr1: JSON.parse( data[ 5 ] ),
-                rnaexpr2: JSON.parse( data[ 6 ] )
-            };
-            self.plotInteractions( plotData );
-            self.overlay.hide();
-            self.$( '.plot-loader' ).remove();
+                rnaexpr2: JSON.parse( data[ 6 ] ),
+                start1: JSON.parse( data[ 7 ] ),
+                start2: JSON.parse( data[ 8 ] ),
+                end1: JSON.parse( data[ 9 ] ),
+                end2: JSON.parse( data[ 10 ] ),
+                length1: JSON.parse( data[ 11 ] ),
+                length2: JSON.parse( data[ 12 ] ),
+            },
+            summary_result_alignment1 = [],
+            summary_result_alignment2 = [],
+            howMany = 0;
+            // show at most 1000
+            howMany = plotData.start1.length > 1000 ? 1000 : plotData.start1.length;
+            for( var counter = 0; counter < howMany; counter++ ) {
+                var alignmentSummary1 = {
+                    startPos: plotData.start1[ counter ],
+                    endPos: plotData.end1[ counter ],
+                    seqLength: plotData.length1[ counter ]
+                };
+                var alignmentSummary2 = {
+                    startPos: plotData.start2[ counter ],
+                    endPos: plotData.end2[ counter ],
+                    seqLength: plotData.length2[ counter ]
+                };
+
+                summary_result_alignment1.push( alignmentSummary1 );
+                summary_result_alignment2.push( alignmentSummary2 );
+            } 
+            var plotsPromise = new Promise( function( resolve, reject ) {
+                resolve( self.plotInteractions( plotData ) );
+            });
+
+            var alignPromise = plotsPromise.then( function() {
+                self.makeAlignmentSummary( summary_result_alignment1, summary_result_alignment2 )
+            });
+
+            alignPromise.then( function() {
+                self.overlay.hide();
+                self.$( '.plot-loader' ).remove();
+            });
         });
     },
 
@@ -583,6 +624,7 @@ var InteractionsView = Backbone.View.extend ({
         e.preventDefault();
         this.$( '.one-sample' ).hide();
         this.$( '.multi-samples' ).show();
+        this.setToDefaults();
         allSamplesView.setToDefaults();
     },
 

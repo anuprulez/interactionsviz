@@ -86,6 +86,12 @@ class RNAInteraction:
         energy = list()
         rnaexpr1 = list()
         rnaexpr2 = list()
+        start1 = list()
+        end1 = list()
+        length1 = list()
+        start2 = list()
+        end2 = list()
+        length2 = list()
         for item_x in xrange( 0, len( sample_data ) ):
             row_x = sample_data[ item_x: item_x + 1 ] 
             family_name = row_x[ 'type2' ].values[ 0 ]
@@ -100,6 +106,14 @@ class RNAInteraction:
             rnaexpr1.append( row_x[ 'tpm1' ].values[ 0 ] )
             rnaexpr2.append( row_x[ 'tpm2' ].values[ 0 ] )
 
+            start1.append( row_x[ 'start1' ].values[ 0 ] )
+            end1.append( row_x[ 'end1' ].values[ 0 ] )
+            length1.append( row_x[ 'length1' ].values[ 0 ] )
+
+            start2.append( row_x[ 'start2' ].values[ 0 ] )
+            end2.append( row_x[ 'end2' ].values[ 0 ] )
+            length2.append( row_x[ 'length2' ].values[ 0 ] )
+
         return {
             'family_names_count': family_names_count,
             'score': score,
@@ -107,7 +121,13 @@ class RNAInteraction:
             'score2': score2,
             'energy': energy,
             'rnaexpr1': rnaexpr1,
-            'rnaexpr2': rnaexpr2
+            'rnaexpr2': rnaexpr2,
+            'start1': start1,
+            'start2': start2,
+            'end1': end1,
+            'end2': end2,
+            'length1': length1,
+            'length2': length2
         }
 
     @classmethod
@@ -269,6 +289,12 @@ if __name__ == "__main__":
                 content += json.dumps( data[ "energy" ] ) + '\n'
                 content += json.dumps( data[ "rnaexpr1" ] ) + '\n'
                 content += json.dumps( data[ "rnaexpr2" ] ) + '\n'
+                content += json.dumps( data[ "start1" ] ) + '\n'
+                content += json.dumps( data[ "start2" ] ) + '\n'
+                content += json.dumps( data[ "end1" ] ) + '\n'
+                content += json.dumps( data[ "end2" ] ) + '\n'
+                content += json.dumps( data[ "length1" ] ) + '\n'
+                content += json.dumps( data[ "length2" ] ) + '\n'
 
             elif( "multisamples" in query ):
                 file_names = RNAInteraction.get_sample_names()
