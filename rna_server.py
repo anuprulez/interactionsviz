@@ -136,7 +136,7 @@ class RNAInteraction:
                         sample_b = samples[ sample_names[ index_y ] ]
                         sample_a_field_dict = dict()
                         for item_x in xrange( 0, len( sample_a ) ):
-                            row_x = sample_a[ item_x: item_x + 1 ] 
+                            row_x = sample_a[ item_x: item_x + 1 ]
                             sample_a_field_dict[ (row_x[ 'txid1' ].values[ 0 ], row_x[ 'txid2' ].values[ 0 ]) ] = \
                                 ( row_x[ 'txid1' ].values[ 0 ], row_x[ 'txid2' ].values[ 0 ] )
                         for item_y in xrange( 0, len( sample_b ) ):

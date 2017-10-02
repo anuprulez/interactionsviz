@@ -145,12 +145,23 @@ var AllSamplesView = Backbone.View.extend ({
                         z: matrix,
                         x: ids,
                         y: ids,
-                        type: 'heatmap'   
+                        type: 'heatmap'
                       }
                     ];
                     var layout = {
                       height: 500,
-                      width: 700,
+                      width: 850,
+                      xaxis: {
+                          tickfont: {
+                              size: 9
+                          },
+                      },
+                      yaxis: {
+                          tickangle: 45,
+                          tickfont: {
+                              size: 9
+                          },
+                      },
                       title: plot_title
                     };
                     Plotly.newPlot( 'samples-plot', data, layout );
@@ -512,7 +523,8 @@ var InteractionsView = Backbone.View.extend ({
             // summary for gene2
             var canvasId2 = "align2-canvas-" + counter;
             var dataCanvas2 = alignment2[ counter ];
-            self.$( '#rna-alignment-graphics2' ).append( "<canvas id="+ canvasId2 +" title='Gene alignment positions'></canvas>" );
+            var canvas2Title = "Gene alignment positions. The sequence as well as alignment length is scaled to 250 pixels"
+            self.$( '#rna-alignment-graphics2' ).append( "<canvas id="+ canvasId2 +" title='" + canvas2Title +"'></canvas>" );
             dataCanvas2.scale = 250;
             dataCanvas2.$elem = document.getElementById( canvasId2 );
             self.$( '#' + canvasId2 ).addClass( 'alignment2-canvas' );
@@ -728,16 +740,24 @@ var InteractionsView = Backbone.View.extend ({
         });
 
         // fire when one interaction is selected
-        $el_rna_interaction.off( 'click' ).on( 'click', function( e ) {
-            var interaction_id = e.target.parentNode.children[ 0 ].id,
+        $el_rna_pair.off( 'click' ).on( 'click', function( e ) {
+            var interaction_id = "",
                 records = self.model;
-            $el_rna_pair.removeClass( 'selected-item' );
-            for( var ctr = 0, len = records.length; ctr < len; ctr++ ) {
-                var item = records[ ctr ];
-                if( item[ 0 ].toString() === interaction_id.toString() ) {
-                    self.$( this ).parent().addClass( ' selected-item' );
-                    self.buildInformation( item );
-                    break;
+            if ( e.target.tagName !== "INPUT" ) {
+                if( e.target.childElementCount > 0 ) {
+                    interaction_id = e.target.children[ 0 ].id;
+                }
+                else {
+                    interaction_id = e.target.parentElement.children[ 0 ].id;
+                }
+                $el_rna_pair.removeClass( 'selected-item' );
+                for( var ctr = 0, len = records.length; ctr < len; ctr++ ) {
+                    var item = records[ ctr ];
+                    if( item[ 0 ].toString() === interaction_id.toString() ) {
+                        self.$( this ).addClass( ' selected-item' );
+                        self.buildInformation( item );
+                        break;
+                    }
                 }
             }
         });
@@ -747,7 +767,8 @@ var InteractionsView = Backbone.View.extend ({
     buildInformation: function( item ) {
         var self = this,
             $el_both_genes = self.$( ".both-genes" ),
-            energyExpr = window.decodeURI("\u0394") + "G" + " = " +  item[ 32 ] + " kcal/mol";;
+            energyClass = parseFloat( item[ 32 ] ) <= 0 ? "energy-negative" : "energy-positive",
+            energyExpr = window.decodeURI("\u0394") + "G" + " = " + "<span class=" + energyClass + ">" + item[ 32 ] + "</span> kcal/mol";
         self.cleanSummary();
         $el_both_genes.empty();
         self.showHideGeneSections( false );
@@ -835,9 +856,9 @@ var InteractionsView = Backbone.View.extend ({
 	var context2 = data.$elem.getContext( "2d" );
 	context2.beginPath();
 	context2.moveTo( scaledBegin, startYPos );
-	context2.lineTo( scaledBegin + data.endPos - data.startPos, startYPos );
+	context2.lineTo( scaledBegin + ratio * ( data.endPos - data.startPos ), startYPos );
 	context2.strokeStyle = 'green';
-	context2.lineWidth = 10;
+	context2.lineWidth = 15;
         context2.shadowColor = 'black';
         context2.shadowOffsetY = 1;
         context2.shadowBlur = 10;
@@ -951,9 +972,8 @@ var InteractionsView = Backbone.View.extend ({
                        '</div>' +
                        '<div class="col-sm-2 elem-rna">' +
                            '<select name="sort" class="rna-sort elem-rna form-control elem-rna" title="Sort">' +
-                               '<option value="">Sort by...</option>' +
-	                       '<option value="score" selected>Score</option>' +
-                               '<option value="energy" selected>Energy</option>' +
+	                       '<option value="score">Score</option>' +
+                               '<option value="energy">Energy</option>' +
                            '</select>' +
                        '</div>' +
                        '<div class="col-sm-6 elem-rna">' +
@@ -998,8 +1018,8 @@ var InteractionsView = Backbone.View.extend ({
                    '<div class="row">' +
                        '<div class="col-sm-10">' +
                            '<input id="check_all_interactions" type="checkbox" class="check-all-interactions"' +
-                               'value="false" title="Check all" />' +
-                           '<span>Check all</span>' +
+                               'value="false" title="Check 1000 interactions" />' +
+                           '<span>Check all above</span>' +
 		           '<button type="button" class="rna-summary btn btn-primary btn-rna btn-interaction" title="Get summary of RNA-RNA interactions">' +
 			       'Summary' +
 		           '</button>' +
@@ -1028,13 +1048,14 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Template for showing information of the selected interaction */
     _templateInformation: function( item, id, file_pos, header_text ) {
+        var canvasTitle = file_pos == 1 ? "Gene aligning positions. The sequence as well as alignment length is scaled to 250 pixels" : "Gene aligning positions";
         return '<span id="'+ id +'">' +
 	               '<p><b>Geneid</b>: ' + item[ 4 + file_pos ] + '</p>' +
 	               '<p><b>Symbol</b>: ' + item[ 6 + file_pos ] + '</p>' +
 	               '<p><b>Type</b>: ' + item[ 8 + file_pos ] + '</p>' +
                        '<p><b>Gene Expression </b>: ' + roundPrecision( parseFloat( item[ 24 + file_pos ] ), 1 ) + '</p>' +
 	               '<p><b>Score'+ (file_pos + 1) + '</b>: ' + roundPrecision( parseFloat( item[ 26 + file_pos ] ), 1 ) + '</p>' +
-                       '<p><b>Gene Aligning Positions:</b></p><canvas id=align-pos-'+ (file_pos + 1) +' title="Gene aligning positions"></canvas>' +
+                       '<p><b>Gene Aligning Positions:</b></p><canvas id=align-pos-'+ (file_pos + 1) +' title="'+ canvasTitle +'"></canvas>' +
 	        '</span>';
     },
 
@@ -1042,8 +1063,8 @@ var InteractionsView = Backbone.View.extend ({
     _templateAlignment: function( alignment, energyExpr ) {
         return "<div class='interaction-header'>Alignment Information <a href='#' class='download-alignment'" +
                    "title='Download the alignment as text file'>Download Alignment</a></div>" +
-                        "<span class='alignment-energy'>" + energyExpr + "</span>" +
-                        "<div class='seq-alignment'><pre class='pre-align'>" + alignment + "</pre></div>";
+                        "<span class='alignment-energy' title='Gibbs free energy'>" + energyExpr + "</span>" +
+                        "<div class='seq-alignment' title='Sequence alignment'><pre class='pre-align'>" + alignment + "</pre></div>";
     }
 });
 
