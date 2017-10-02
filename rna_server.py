@@ -215,11 +215,10 @@ class RNAInteraction:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print( "Usage: python rna_server.py <file> <port>" )
+    if len(sys.argv) != 2:
+        print( "Usage: python rna_server.py <port>" )
         exit( 1 )
-    input_file = sys.argv[ 1 ]
-    port = int( sys.argv[ 2 ] )
+    port = int( sys.argv[ 1 ] )
     # Create communication socket and listen on port 80.
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -244,7 +243,6 @@ if __name__ == "__main__":
                 content_type = "text/html"
         elif match:
             query = match.group( 1 )
-            file_name = sys.argv[ 1 ]
             data = RNAInteraction()
             content = ""
             parsed_query = urlparse.urlparse( query )
