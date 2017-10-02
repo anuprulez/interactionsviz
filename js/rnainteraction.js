@@ -350,9 +350,9 @@ var InteractionsView = Backbone.View.extend ({
         if( e.which === 13 ) { // search on enter click
             filterType = $el_filter.find( ":selected" ).val();
             filterOperator = $el_filter_operator.find( ":selected" ).val();
-            if ( filterType === "-1" || query === "" ) {
-                return;
-            }
+            if ( filterType === "-1" || query === "" ) return;
+            if ( filterType === "score" && isNaN( query ) ) return;
+
             var url = "http://" + self.host + ":" + self.port + "/?sample_name="+ self.sampleName +
                 "&filter_type=" + filterType + "&filter_op=" + filterOperator + "&filter_value=" + query;
             self.showInteractions( "", url );
