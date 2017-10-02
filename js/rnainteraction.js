@@ -412,7 +412,9 @@ var InteractionsView = Backbone.View.extend ({
             summary_result_score2 = [],
             summary_result_energy = [],
             summary_result_alignment1 = [],
-            summary_result_alignment2 = [];
+            summary_result_alignment2 = [],
+            summary_result_gene_expr1 = [],
+            summary_result_gene_expr2 = [];
 
         self.showHideGeneSections( true );
         _.each( checkboxes, function( item ) {
@@ -443,6 +445,8 @@ var InteractionsView = Backbone.View.extend ({
                 summary_result_score2.push( summary_items[ i ][ 27 ] );
                 summary_result_score.push( summary_items[ i ][ 28 ] );
                 summary_result_energy.push( summary_items[ i ][ 32 ] );
+                summary_result_gene_expr1.push( summary_items[ i ][ 24 ] );
+                summary_result_gene_expr2.push( summary_items[ i ][ 25 ] )
  
                 var alignmentSummary1 = {
                     startPos: summary_items[ i ][ 10 ],
@@ -464,7 +468,9 @@ var InteractionsView = Backbone.View.extend ({
                 'score': summary_result_score,
                 'score1': summary_result_score1,
                 'score2': summary_result_score2,
-                'energy': summary_result_energy
+                'energy': summary_result_energy,
+                'rnaexpr1': summary_result_gene_expr1,
+                'rnaexpr2': summary_result_gene_expr2
             };
             self.cleanSummary();
             self.plotInteractions( plottingData );
@@ -484,6 +490,8 @@ var InteractionsView = Backbone.View.extend ({
         self.plotHistogram( data.score1, "rna-score1", 'Score1 distribution for ' + self.sampleName );
         self.plotHistogram( data.score2, "rna-score2", 'Score2 distribution for ' + self.sampleName );
         self.plotHistogram( data.energy, "rna-energy", 'Energy distribution for ' + self.sampleName );
+        self.plotHistogram( data.rnaexpr1, "rna-expr1", 'Gene1 expression distribution for ' + self.sampleName );
+        self.plotHistogram( data.rnaexpr2, "rna-expr2", 'Gene2 expression distribution for ' + self.sampleName );
     },
 
     /** Make alignment graphics summary for all checked items*/
@@ -549,6 +557,8 @@ var InteractionsView = Backbone.View.extend ({
                 score1: JSON.parse( data[ 2 ] ),
                 score2: JSON.parse( data[ 3 ] ),
                 energy: JSON.parse( data[ 4 ] ),
+                rnaexpr1: JSON.parse( data[ 5 ] ),
+                rnaexpr2: JSON.parse( data[ 6 ] )
             };
             self.plotInteractions( plotData );
             self.overlay.hide();
@@ -721,7 +731,7 @@ var InteractionsView = Backbone.View.extend ({
         $el_rna_interaction.off( 'click' ).on( 'click', function( e ) {
             var interaction_id = e.target.parentNode.children[ 0 ].id,
                 records = self.model;
-            self.$( ".rna-pair" ).removeClass( 'selected-item' );
+            $el_rna_pair.removeClass( 'selected-item' );
             for( var ctr = 0, len = records.length; ctr < len; ctr++ ) {
                 var item = records[ ctr ];
                 if( item[ 0 ].toString() === interaction_id.toString() ) {
@@ -741,16 +751,18 @@ var InteractionsView = Backbone.View.extend ({
         self.cleanSummary();
         $el_both_genes.empty();
         self.showHideGeneSections( false );
-        $el_both_genes.append( "<div class='interaction-header'>Genes Information </div>" );
-        $el_both_genes.append( self._templateInformation( item, "info-gene1", 0 ) );
-        $el_both_genes.append( self._templateInformation( item, "info-gene2", 1 ) );
-        self.buildAligmentGraphics( item );
+
         var sequence_info = {
             sequences: item[ 29 ],
             dotbrackets: item[ 30 ],
             startindices: "1&1" // sequences in the file are already carved-out
         };
         $el_both_genes.append( self._templateAlignment( self.fetchAlignment( sequence_info ), energyExpr ) );
+
+        $el_both_genes.append( "<div class='interaction-header'>Genes Information </div>" );
+        $el_both_genes.append( self._templateInformation( item, "info-gene1", 0 ) );
+        $el_both_genes.append( self._templateInformation( item, "info-gene2", 1 ) );
+        self.buildAligmentGraphics( item );
 
         // event for downloading alignment as text file
         self.$( '.download-alignment' ).off( 'click' ).on( 'click', function( e ) {
@@ -851,7 +863,7 @@ var InteractionsView = Backbone.View.extend ({
         dot_brackets = dot_brackets.split( "&" );
         start_indices = start_indices.split( "&" );
         dotbracket1 = dot_brackets[ 0 ].split( "" );
-        dotbracket2 = dot_brackets[ 1 ].split("");
+        dotbracket2 = dot_brackets[ 1 ].split( "" );
         dotbracket1_length = dotbracket1.length;
         dotbracket2_length = dotbracket2.length;
 
@@ -923,6 +935,8 @@ var InteractionsView = Backbone.View.extend ({
         self.$( ".both-genes" ).empty();
         self.$( "#rna-alignment-graphics1" ).empty();
         self.$( "#rna-alignment-graphics2" ).empty();
+        self.$( "#rna-expr1" ).empty();
+        self.$( "#rna-expr2" ).empty();
     },
 
     _templateInteractions: function( options ) {
@@ -971,11 +985,13 @@ var InteractionsView = Backbone.View.extend ({
                            '<div id="rna-type1"></div>' +
                            '<div id="rna-score1"></div>' +
                            '<div id="rna-energy"></div>' +
+                           '<div id="rna-expr1"></div>' +
                            '<div id="rna-alignment-graphics1"></div>' +
                        '</div>' +
                        '<div class="col-sm-5 second-gene">' +
                            '<div id="rna-type2"></div>' +
                            '<div id="rna-score2"></div>' +
+                           '<div id="rna-expr2"></div>' +
                            '<div id="rna-alignment-graphics2"></div>' +
                        '</div>' +
                    '</div>' +

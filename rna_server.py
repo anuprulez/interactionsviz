@@ -84,6 +84,8 @@ class RNAInteraction:
         score1 = list()
         score2 = list()
         energy = list()
+        rnaexpr1 = list()
+        rnaexpr2 = list()
         for item_x in xrange( 0, len( sample_data ) ):
             row_x = sample_data[ item_x: item_x + 1 ] 
             family_name = row_x[ 'type2' ].values[ 0 ]
@@ -95,13 +97,17 @@ class RNAInteraction:
             score1.append( row_x[ 'score1' ].values[ 0 ] )
             score2.append( row_x[ 'score2' ].values[ 0 ] )
             energy.append( row_x[ 'energy' ].values[ 0 ] )
+            rnaexpr1.append( row_x[ 'tpm1' ].values[ 0 ] )
+            rnaexpr2.append( row_x[ 'tpm2' ].values[ 0 ] )
 
         return {
             'family_names_count': family_names_count,
             'score': score,
             'score1': score1,
             'score2': score2,
-            'energy': energy
+            'energy': energy,
+            'rnaexpr1': rnaexpr1,
+            'rnaexpr2': rnaexpr2
         }
 
     @classmethod
@@ -257,10 +263,12 @@ if __name__ == "__main__":
             elif( "summary_plot" in query ): 
                 data = RNAInteraction.get_plotting_data( params )
                 content = json.dumps( data[ 'family_names_count' ] ) + '\n'
-                content = content + json.dumps( data[ "score" ] ) + '\n'
-                content = content + json.dumps( data[ "score1" ] ) + '\n'
-                content = content + json.dumps( data[ "score2" ] ) + '\n'
-                content = content + json.dumps( data[ "energy" ] ) + '\n'
+                content += json.dumps( data[ "score" ] ) + '\n'
+                content += json.dumps( data[ "score1" ] ) + '\n'
+                content += json.dumps( data[ "score2" ] ) + '\n'
+                content += json.dumps( data[ "energy" ] ) + '\n'
+                content += json.dumps( data[ "rnaexpr1" ] ) + '\n'
+                content += json.dumps( data[ "rnaexpr2" ] ) + '\n'
 
             elif( "multisamples" in query ):
                 file_names = RNAInteraction.get_sample_names()
