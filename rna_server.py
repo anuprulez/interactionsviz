@@ -92,6 +92,9 @@ class RNAInteraction:
         start2 = list()
         end2 = list()
         length2 = list()
+        symbol1 = dict()
+        geneid1 = list()
+        geneid2 = list()
         for item_x in xrange( 0, len( sample_data ) ):
             row_x = sample_data[ item_x: item_x + 1 ] 
             family_name = row_x[ 'type2' ].values[ 0 ]
@@ -113,6 +116,14 @@ class RNAInteraction:
             start2.append( row_x[ 'start2' ].values[ 0 ] )
             end2.append( row_x[ 'end2' ].values[ 0 ] )
             length2.append( row_x[ 'length2' ].values[ 0 ] )
+            geneid1.append( row_x[ 'geneid1' ].values[ 0 ] )
+            geneid2.append( row_x[ 'geneid2' ].values[ 0 ] )
+
+            symbol1_name = row_x[ 'symbol1' ].values[ 0 ]
+            if symbol1_name in symbol1:
+                symbol1[ symbol1_name ] += 1
+            else:
+               symbol1[ symbol1_name ] = 1
 
         return {
             'family_names_count': family_names_count,
@@ -127,7 +138,10 @@ class RNAInteraction:
             'end1': end1,
             'end2': end2,
             'length1': length1,
-            'length2': length2
+            'length2': length2,
+            'symbol1': symbol1,
+            'geneid1': geneid1,
+            'geneid2': geneid2
         }
 
     @classmethod
@@ -295,6 +309,9 @@ if __name__ == "__main__":
                 content += json.dumps( data[ "end2" ] ) + '\n'
                 content += json.dumps( data[ "length1" ] ) + '\n'
                 content += json.dumps( data[ "length2" ] ) + '\n'
+                content += json.dumps( data[ "symbol1" ] ) + '\n'
+                content += json.dumps( data[ "geneid1" ] ) + '\n'
+                content += json.dumps( data[ "geneid2" ] ) + '\n'
 
             elif( "multisamples" in query ):
                 file_names = RNAInteraction.get_sample_names()

@@ -361,10 +361,9 @@ var InteractionsView = Backbone.View.extend ({
     },
 
     /** Plot pie chart for interactions chosen for summary */
-    plotPieChart: function( dict, container, name ) {
+    plotPieChart: function( dict, container, name, pieHeight ) {
         var layout = {
-            height:450,
-            width: 500,
+            height: 450,
             title: name
         },
         labels = [],
@@ -457,7 +456,8 @@ var InteractionsView = Backbone.View.extend ({
             summary_result_alignment1 = [],
             summary_result_alignment2 = [],
             summary_result_gene_expr1 = [],
-            summary_result_gene_expr2 = [];
+            summary_result_gene_expr2 = [],
+            summary_result_symbol1 = [];
 
         self.showHideGeneSections( true );
         _.each( checkboxes, function( item ) {
@@ -492,17 +492,20 @@ var InteractionsView = Backbone.View.extend ({
                 summary_result_score.push( item[ 28 ] );
                 summary_result_energy.push( item[ 32 ] );
                 summary_result_gene_expr1.push( item[ 24 ] );
-                summary_result_gene_expr2.push( item[ 25 ] )
- 
+                summary_result_gene_expr2.push( item[ 25 ] );
+                summary_result_symbol1[ item[ 6 ] ] = ( summary_result_symbol1[ item[ 6 ] ] || 0 ) + 1;
+
                 var alignmentSummary1 = {
                     startPos: item[ 10 ],
                     endPos: item[ 11 ],
-                    seqLength: item[ 12 ]
+                    seqLength: item[ 12 ],
+                    geneid: item[ 4 ]
                 };
                 var alignmentSummary2 = {
                     startPos: item[ 13 ],
                     endPos: item[ 14 ],
-                    seqLength: item[ 15 ]
+                    seqLength: item[ 15 ],
+                    geneid: item[ 5 ]
                 };
                 summary_result_alignment1.push( alignmentSummary1 );
                 summary_result_alignment2.push( alignmentSummary2 );
@@ -515,7 +518,8 @@ var InteractionsView = Backbone.View.extend ({
                 'score2': summary_result_score2,
                 'energy': summary_result_energy,
                 'rnaexpr1': summary_result_gene_expr1,
-                'rnaexpr2': summary_result_gene_expr2
+                'rnaexpr2': summary_result_gene_expr2,
+                'symbol1': summary_result_symbol1
             };
             self.cleanSummary();
             var plotPromise = new Promise( function( resolve, reject ) {
@@ -532,6 +536,7 @@ var InteractionsView = Backbone.View.extend ({
         createFancyScroll( "first-gene" );
         createFancyScroll( "second-gene" );
         // plot the summary as pie charts and histograms
+        self.plotPieChart( data.symbol1, "rna-symbol1", 'Gene1 RNA family distribution for ' + self.sampleName, "800" );
         self.plotHistogram( data.score, "rna-score", 'Score distribution for ' + self.sampleName, "Score", "# Interactions" );
         self.plotPieChart( data.family_names_count, "rna-type2", 'Gene2 RNA family distribution for ' + self.sampleName );
         self.plotHistogram( data.score1, "rna-score1", 'Score1 distribution for ' + self.sampleName, "Score1", "# Interactions" );
@@ -617,6 +622,9 @@ var InteractionsView = Backbone.View.extend ({
                 end2: JSON.parse( data[ 10 ] ),
                 length1: JSON.parse( data[ 11 ] ),
                 length2: JSON.parse( data[ 12 ] ),
+                symbol1: JSON.parse( data[ 13 ] ),
+                geneid1: JSON.parse( data[ 14 ] ),
+                geneid2: JSON.parse( data[ 15 ] )
             },
             summary_result_alignment1 = [],
             summary_result_alignment2 = [],
@@ -628,12 +636,14 @@ var InteractionsView = Backbone.View.extend ({
                 summary_result_alignment1.push( {
                     startPos: plotData.start1[ counter ],
                     endPos: plotData.end1[ counter ],
-                    seqLength: plotData.length1[ counter ]
+                    seqLength: plotData.length1[ counter ],
+                    geneid: plotData.geneid1[ counter ]
                 } );
                 summary_result_alignment2.push( {
                     startPos: plotData.start2[ counter ],
                     endPos: plotData.end2[ counter ],
-                    seqLength: plotData.length2[ counter ]
+                    seqLength: plotData.length2[ counter ],
+                    geneid: plotData.geneid2[ counter ]
                 } );
             }
 
@@ -931,6 +941,9 @@ var InteractionsView = Backbone.View.extend ({
 
 	context1.textBaseline = "top";
 	context1.fillText( data.seqLength, parseInt( scale ), startYPos + textYDiff );
+        if( data.geneid ) {
+            context1.fillText( data.geneid, 0, startYPos - 25 );
+        }
 	context1.stroke();
 
         // on the black line, redraw a red line using the aligning positions 
@@ -1039,6 +1052,7 @@ var InteractionsView = Backbone.View.extend ({
         self.$( "#rna-alignment-graphics2" ).empty();
         self.$( "#rna-expr1" ).empty();
         self.$( "#rna-expr2" ).empty();
+        self.$( "#rna-symbol1" ).empty();
     },
 
     _templateInteractions: function( options ) {
@@ -1083,6 +1097,7 @@ var InteractionsView = Backbone.View.extend ({
                        '</div>' +
                        '<div class="col-sm-10 both-genes"></div>' +
                        '<div class="col-sm-5 first-gene">' +
+                           '<div id="rna-symbol1"></div>' +
                            '<div id="rna-score"></div>' +
                            '<div id="rna-score1"></div>' +
                            '<div id="rna-energy"></div>' +
