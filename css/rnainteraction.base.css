@@ -213,12 +213,8 @@ p {
     font-weight: bold;
 }
 
-.alignment1-canvas {
-    margin-left: 35%;
-}
-
-.alignment2-canvas {
-    margin-left: 25%;
+.alignment-canvas {
+    margin-left: 5%;
 }
 
 #rna-alignment-graphics1 p, #rna-alignment-graphics2 p {

@@ -262,7 +262,7 @@ if __name__ == "__main__":
     # Create communication socket and listen on port 80.
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind((socket.gethostname(), port))
+    server.bind( ( '127.0.0.1', port ) )
     server.listen( 5 )
     # Server loop.
     while True:
