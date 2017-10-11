@@ -13,10 +13,10 @@ How to use:
 4. Run python server: $ python rna_server.py port_number
    example: $ python rna_server.py 8001
 
-5. Open browser and browse to: http://your_domain_name:port/index.html
+5. Open browser and browse to: http://host:port/index.html
    
-   example: My system's root is: anupkumar@anupkumar-pc
-   So the url for me is: http://anupkumar-pc:8001/index.html
+   The host can be "localhost" or "127.0.0.1"
+   http://localhost:8001/index.html or http://127.0.0.1:8001/index.html
 
 6. The left-side panel lists all the .tsv files placed in the "data" folder. All these files are converted into HDF files.
 
