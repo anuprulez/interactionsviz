@@ -1,7 +1,8 @@
 function createFancyScroll( class_name ) {
     $( '.' + class_name ).mCustomScrollbar({
             theme:"minimal",
-            scrollInertia: 1
+            scrollInertia: 1,
+            mouseWheel: { enable: false }
         });
     $( '.' + class_name + ' .mCSB_dragger_bar' ).css( 'background-color', 'black' );
 }
@@ -595,7 +596,7 @@ var InteractionsView = Backbone.View.extend ({
             var data1 = item;
             data1.$elem = canvas1;
             data1.context = context1;
-            data1.scale = data1.seqLength;
+            data1.scale = 100;
             data1.heightDiff = heightDiff;
             self.drawMultipleGenomicCanvas( data1 );
             heightDiff += heightFactor;
@@ -607,7 +608,7 @@ var InteractionsView = Backbone.View.extend ({
             var data2 = alignment2[ index ];
             data2.$elem = canvas2;
             data2.context = context2;
-            data2.scale = 250;
+            data2.scale = 100;
             data2.heightDiff = heightDiff;
             self.drawMultipleGenomicCanvas( data2 );
             heightDiff += heightFactor;
@@ -616,85 +617,93 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Draw genomic positions for the selected interactions */
     drawMultipleGenomicCanvas: function( data ) {
-
         var context = data.context,
-            ratio = data.scale / data.seqLength,
+            scale = data.seqLength < data.scale ? data.seqLength : data.scale,
+            ratio = scale / data.seqLength,
             scaledBegin = parseInt( ratio * data.startPos ),
 	    scaledEnd = parseInt( ratio * data.endPos ),
             textYDiff = 5,
             textXDiff = 7,
             scaledTextXDiff = ratio * textXDiff,
-            barLength = 0,
-            geneIdXDiff = 60;
+            barLength = ( data.endPos - data.startPos ),
+            geneIdXDiff = 60,
+            seqEndPos = 0;
 
         context.beginPath();
         context.textBaseline = "top";
         context.lineWidth = 2;
 	context.moveTo( 0, data.heightDiff );
-        context.lineTo( data.scale, data.heightDiff );
-	context.fillText( data.seqLength, data.scale + textXDiff, data.heightDiff - textYDiff );
+        context.setLineDash([1, 4]);
+        context.lineTo( scaledBegin, data.heightDiff );
+        context.stroke();
+
+        // on the black line, redraw a green line using the aligning positions 
+	context.beginPath();
+        context.setLineDash([]);
+        context.strokeStyle = 'green';
+	context.lineWidth = 10;
+	context.moveTo( scaledBegin, data.heightDiff );
+	context.lineTo( scaledBegin + barLength, data.heightDiff );
+        context.stroke();
+
+        //
+        context.beginPath();
+        context.textBaseline = "top";
+        context.lineWidth = 2;
+        context.setLineDash([1, 4]);
+	context.moveTo( scaledBegin + barLength, data.heightDiff );
+        seqEndPos = scaledBegin + barLength + ratio * ( data.seqLength - data.endPos );
+        context.lineTo( seqEndPos, data.heightDiff );
+	context.fillText( data.seqLength, 180 + textXDiff, data.heightDiff - textYDiff );
 	context.strokeStyle = 'black';
 
         if( data.geneid ) {
-            context.fillText( data.geneid, data.scale + geneIdXDiff, data.heightDiff - textYDiff );
+            context.fillText( data.geneid, 200 + geneIdXDiff, data.heightDiff - textYDiff );
         }
 	context.stroke();
-
-        // on the black line, redraw a red line using the aligning positions 
-	var contextBar = data.$elem.getContext( "2d" );
-	contextBar.beginPath();
-        contextBar.strokeStyle = 'green';
-	contextBar.lineWidth = 10;
-	contextBar.moveTo( scaledBegin, data.heightDiff );
-        barLength = ratio * ( data.endPos - data.startPos );
-        // set the scaled alignment length to 0.5 if less than 0.5
-        // so that it is visible
-        barLength = barLength < 0.5 ? 0.5 : barLength;
-	contextBar.lineTo( scaledBegin + barLength, data.heightDiff );
-        contextBar.stroke();
     },
 
     /** Draw alignment using HTML5 canvas */
     drawCanvas: function( data ) {
-        var scale = data.scale,
+        var scale = data.seqLength < data.scale ? data.seqLength : data.scale,
             ratio = scale / data.seqLength,
             scaledBegin = parseInt( ratio * data.startPos ),
 	    scaledEnd = parseInt( ratio * data.endPos ),
             heightDiff = 30,
             textYDiff = 10,
-            barLength = 0;
+            barLength = ( data.endPos - data.startPos ),
+            seqEndPos = scaledBegin + barLength + ratio * ( data.seqLength - data.endPos );
 
-	var context1 = data.$elem.getContext( "2d" );
-	context1.beginPath();
-	context1.font = '8pt verdana';
+	var context = data.$elem.getContext( "2d" );
+	context.beginPath();
+	context.font = '8pt verdana';
 
         // first draw a black line of length equal to scale
-	context1.strokeStyle = 'black';
-	context1.moveTo( 0, heightDiff );
-        context1.lineTo( scale, heightDiff );
+	context.strokeStyle = 'black';
+	context.moveTo( 0, heightDiff );
+        context.setLineDash([1, 4]);
+        context.lineTo( scaledBegin, heightDiff );
+	context.textBaseline = "top";
+	context.stroke();
 
-	context1.textBaseline = "top";
-	context1.fillText( 0, 0, heightDiff + textYDiff );
+        // on the black line, redraw a green line using the aligning positions 
+	context.beginPath();
+        context.setLineDash([]);
+	context.moveTo( scaledBegin, heightDiff );
+	context.lineTo( scaledBegin + barLength, heightDiff );
+	context.strokeStyle = 'green';
+	context.lineWidth = 10;
+        context.stroke();
 
-	context1.textBaseline = "top";
-	context1.fillText( data.seqLength, parseInt( scale ), heightDiff + textYDiff );
-        if( data.geneid ) {
-            context1.fillText( data.geneid, 0, heightDiff - 25 );
-        }
-	context1.stroke();
-
-        // on the black line, redraw a red line using the aligning positions 
-	var context2 = data.$elem.getContext( "2d" );
-	context2.beginPath();
-	context2.moveTo( scaledBegin, heightDiff );
-        barLength = ratio * ( data.endPos - data.startPos );
-        // set the scaled alignment length to 0.5 if less than 0.5
-        // so that it is visible
-        barLength = barLength < 0.5 ? 0.5 : barLength;
-	context2.lineTo( scaledBegin + barLength, heightDiff );
-	context2.strokeStyle = 'green';
-	context2.lineWidth = 10;
-        context2.stroke();
+        context.beginPath();
+        context.textBaseline = "top";
+        context.lineWidth = 2;
+        context.setLineDash([1, 4]);
+	context.moveTo( scaledBegin + barLength, heightDiff );
+        context.lineTo( seqEndPos, heightDiff );
+	context.fillText( data.seqLength, seqEndPos + 5, heightDiff );
+	context.strokeStyle = 'black';
+        context.stroke();
     },
 
     /** Fetch summary data from server */
@@ -969,6 +978,7 @@ var InteractionsView = Backbone.View.extend ({
                     if( item[ 0 ].toString() === interaction_id.toString() ) {
                         self.$( this ).addClass( ' selected-item' );
                         self.buildInformation( item );
+                        self.fetchGraphInformation( item );
                         break;
                     }
                 }
@@ -1002,6 +1012,8 @@ var InteractionsView = Backbone.View.extend ({
         $el_both_genes.append( "<div class='interaction-header'>Genes Information </div>" );
         $el_both_genes.append( self._templateInformation( item, "info-gene1", 0 ) );
         $el_both_genes.append( self._templateInformation( item, "info-gene2", 1 ) );
+
+        createFancyScroll( "single-interactions-info" );
         self.buildAligmentGraphics( item );
 
         // event for downloading alignment as text file
@@ -1009,6 +1021,101 @@ var InteractionsView = Backbone.View.extend ({
              e.preventDefault();
              e.stopPropagation();
              self.exportAlignment();
+        });
+    },
+
+    /** Fetch information about a gene's all interactions  */
+    fetchGraphInformation: function( item ) {
+        var self = this,
+            url = "http://" + self.host + ":" + self.port + "/?graphinfo=true&geneid1=" + item[ 4 ] +
+                  "&geneid2=" + item[ 5 ] + "&filename=" + self.sampleName; 
+        $.get( url, function( data ) {
+            data = data.split( '\n\n' );
+            gene1Interactions = data[ 0 ].split( '\n' );
+            gene2Interactions = data[ 1 ].split( '\n' );
+            var gene1InteractionsUnpacked = [];
+            var gene2InteractionsUnpacked = [];
+            _.each( gene1Interactions, function( item ) {
+                if( item !== "" ) {
+                    gene1InteractionsUnpacked.push( JSON.parse( item ) );
+                }
+            });
+            _.each( gene2Interactions, function( item ) {
+                if( item !== "" ) {
+                    gene2InteractionsUnpacked.push( JSON.parse( item ) );
+                }
+            });
+            self.buildCytoscapeGraph( gene1InteractionsUnpacked, gene2InteractionsUnpacked );
+        });
+    },
+
+    buildCytoscapeGraph: function( interactions1, interactions2 ) {
+        var $el_gene1 = document.getElementById( 'interaction-graph-1' ),
+            $el_gene2 = document.getElementById( 'interaction-graph-2' ),
+            self = this,
+            gene1Nodes = [],
+            gene1Edges = [],
+            gene2Nodes = [],
+            gene2Edges = [];
+
+        $el_gene1.style.width = "90%";
+        $el_gene1.style.height = "90%";
+        $el_gene1.style.position = "relative";
+        $el_gene2.style.width = "90%";
+        $el_gene2.style.height = "90%";
+        $el_gene2.style.position = "relative";
+
+        var source1 = interactions1[ 0 ][ 4 ];
+        gene1Nodes.push( {
+            data: { id: source1 }
+        });
+        _.each( interactions1, function( item ) {
+            var targetGeneId = item[ 5 ];
+            gene1Nodes.push( {
+                data: { id: targetGeneId }
+            });
+            gene1Edges.push( {
+                data: { source: source1, target: targetGeneId }
+            });
+        });
+
+        var graphGene1 = cytoscape({
+            container: $el_gene1,
+            elements: {
+                nodes: gene1Nodes,
+                edges: gene1Edges
+            },
+            layout: {
+                name: 'breadthfirst',
+                directed: true
+            }
+        });
+
+        var source2 = interactions2[ 0 ][ 5 ];
+        gene2Nodes.push( {
+            data: { id: source2 }
+        });
+
+        _.each( interactions2, function( item ) {
+            var targetGeneId = item[ 4 ];
+            gene2Nodes.push( {
+                data: { id: targetGeneId }
+            });
+            gene2Edges.push( {
+                data: { source: source2, target: targetGeneId }
+            });
+        });
+
+        var graphGene2 = cytoscape({
+            container: $el_gene2,
+            elements: {
+                nodes: gene2Nodes,
+                edges: gene2Edges
+            },
+            layout: {
+                name: 'breadthfirst',
+                directed: true
+            }
         });
     },
 
@@ -1022,7 +1129,7 @@ var InteractionsView = Backbone.View.extend ({
             startPos: item[ 10 ],
             endPos: item[ 11 ],
             seqLength: item[ 12 ],
-            scale: item[ 12 ],
+            scale: 100,
             $elem: document.getElementById( "align-pos-1" )
         }
         self.drawCanvas( dataCanvas );
@@ -1032,7 +1139,7 @@ var InteractionsView = Backbone.View.extend ({
             startPos: item[ 13 ],
             endPos: item[ 14 ],
             seqLength: item[ 15 ],
-            scale: 250,
+            scale: 100,
             $elem: document.getElementById( "align-pos-2" )
         }
         self.drawCanvas( dataCanvas );
@@ -1132,6 +1239,8 @@ var InteractionsView = Backbone.View.extend ({
         self.$( "#rna-expr1" ).empty();
         self.$( "#rna-expr2" ).empty();
         self.$( "#rna-symbol1" ).empty();
+        self.$( "#interaction-graph-1" ).empty();
+        self.$( "#interaction-graph-2" ).empty();
     },
 
     _templateInteractions: function( options ) {
@@ -1224,13 +1333,14 @@ var InteractionsView = Backbone.View.extend ({
     /** Template for showing information of the selected interaction */
     _templateInformation: function( item, id, file_pos, header_text ) {
         var canvasTitle = file_pos == 1 ? "Gene aligning positions. The sequence as well as alignment length is scaled to 250 pixels" : "Gene aligning positions";
-        return '<span id="'+ id +'">' +
+        return '<span id="'+ id +'" class="single-interactions-info">' +
 	               '<p><b>Geneid</b>: ' + item[ 4 + file_pos ] + '</p>' +
 	               '<p><b>Symbol</b>: ' + item[ 6 + file_pos ] + '</p>' +
 	               '<p><b>Type</b>: ' + item[ 8 + file_pos ] + '</p>' +
                        '<p><b>Gene Expression </b>: ' + roundPrecision( parseFloat( item[ 24 + file_pos ] ), 1 ) + '</p>' +
 	               '<p><b>Score'+ (file_pos + 1) + '</b>: ' + roundPrecision( parseFloat( item[ 26 + file_pos ] ), 1 ) + '</p>' +
                        '<p><b>Gene Aligning Positions:</b></p><canvas id=align-pos-'+ (file_pos + 1) +' title="'+ canvasTitle +'"></canvas>' +
+                       '<p><b>Gene interactions graph:</b></p><div id=interaction-graph-'+ (file_pos + 1) +'></div>' +
 	        '</span>';
     },
 

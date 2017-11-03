@@ -168,14 +168,16 @@ p {
     margin: 0;
 }
 
-#info-gene1, #info-gene2 {
+.single-interactions-info {
     padding-top: 1%;
     display: inline-block;
-    width: 30%;
+    width: 48%;
+    height: 48%;
+    overflow: auto;
 }
 
 #info-gene1 {
-    margin: 0 20% 0 1%;
+    margin: 0 1% 0 1%;
 }
 
 #info-gene2 {

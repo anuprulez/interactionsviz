@@ -7,6 +7,7 @@ import urlparse
 import pandas as pd
 import numpy as np
 import uuid
+import urllib
 
 
 class RNAInteraction:
@@ -74,6 +75,16 @@ class RNAInteraction:
         else:
            sample_data = pd.read_hdf( self.dir_path + sample_name + self.hdf_file_ext, sample_name, index=None )
         return sample_data
+
+    @classmethod
+    def get_graph_interactions( self, sample_name, geneid1, geneid2 ):
+        all_data = self.read_hdf_sample( sample_name )
+        data_geneid1 = all_data[ all_data[ self.searchable_fields[ 2 ] ].str.lower().str.contains( geneid1.lower() ) ]
+        data_geneid2 = all_data[ all_data[ self.searchable_fields[ 3 ] ].str.lower().str.contains( geneid2.lower() ) ]
+        return {
+            "geneid1": data_geneid1,
+            "geneid2": data_geneid2
+        }
 
     @classmethod
     def get_plotting_data( self, params ):
@@ -348,7 +359,21 @@ if __name__ == "__main__":
                     content += json.dumps( list(filtered_data.columns) ) + '\n'
                     filtered_data = filtered_data[ 1:1001 ] if len( filtered_data ) > 1000 else filtered_data
                     for index, row in filtered_data.iterrows():
-                        content += row.to_json( orient='records' ) + '\n'  
+                        content += row.to_json( orient='records' ) + '\n'
+
+            elif( "graphinfo" in query ):
+                sample_name = params[ 'filename' ][ 0 ]
+                geneid1 = params[ 'geneid1' ][ 0 ]
+                geneid2 = params[ 'geneid2' ][ 0 ]
+                interactions = data.get_graph_interactions( sample_name, geneid1, geneid2 )
+                gene1_interactions = interactions[ "geneid1" ]
+                gene2_interactions = interactions[ "geneid2" ]
+
+                for index, row in gene1_interactions.iterrows():
+                    content += row.to_json( orient='records' ) + '\n'     
+                content += '\n\n'
+                for index, row in gene2_interactions.iterrows():
+                    content += row.to_json( orient='records' ) + '\n'
 
             elif( "?" in query ):
                 search_by = ""
@@ -375,7 +400,7 @@ if __name__ == "__main__":
                         if query.endswith( ".html" ):
                             content_type = "text/html"
                         elif query.endswith( ".js" ):
-                           content_type = "application/javascript"
+                            content_type = "application/javascript"
                         elif query.endswith( ".css" ):
                             content_type = "text/css"
                 except:
@@ -385,5 +410,5 @@ if __name__ == "__main__":
             "Content-Length: %d\r\n" \
             "Content-Type: %s  \r\n" \
             "\r\n %s" % ( content_length, content_type, content )
-        client.send( answer.encode( "utf8" ) )
+        client.send( answer )
         client.close()
