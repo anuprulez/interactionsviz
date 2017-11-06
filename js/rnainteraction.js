@@ -406,10 +406,11 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Plot bar for interactions chosen for summary */
     plotBar: function( data, container, name, xTitle, yTitle ) {
+
 	var trace = [
             {
-	        x: data,
-	        type: 'bar',
+                x: data,
+	        type: 'bar'
             }
         ], 
         layout = {
@@ -1359,7 +1360,7 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Template for showing information of the selected interaction */
     _templateInformation: function( item, id, file_pos, header_text ) {
-        var canvasTitle = file_pos == 1 ? "Gene aligning positions. The sequence as well as alignment length is scaled to 250 pixels" : "Gene aligning positions";
+        var canvasTitle = file_pos == 1 ? "Gene aligning positions. The sequence as well as alignment length is scaled to 100 pixels" : "Gene aligning positions";
         return '<span id="'+ id +'" class="single-interactions-info">' +
 	               '<p><b>Geneid</b>: ' + item[ 4 + file_pos ] + '</p>' +
 	               '<p><b>Symbol</b>: ' + item[ 6 + file_pos ] + '</p>' +

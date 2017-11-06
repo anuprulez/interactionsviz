@@ -173,7 +173,7 @@ p {
     padding-top: 1%;
     display: inline-block;
     width: 48%;
-    height: 59%;
+    height: 62%;
     overflow: auto;
 }
 
@@ -184,6 +184,10 @@ p {
 #info-gene2 {
     border-left: 1px solid black;
     padding-left: 1%;
+}
+
+.seq-alignment {
+    height: 22%;
 }
 
 .seq-alignment > pre {
