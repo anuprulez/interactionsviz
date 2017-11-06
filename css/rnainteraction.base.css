@@ -3,6 +3,7 @@ body {
     font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
     font-size: 9pt;
     background-color: #f8f8f8;
+    width: 99.1%;
 }
 
 .row {
@@ -172,7 +173,7 @@ p {
     padding-top: 1%;
     display: inline-block;
     width: 48%;
-    height: 48%;
+    height: 59%;
     overflow: auto;
 }
 

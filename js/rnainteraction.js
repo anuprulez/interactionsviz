@@ -675,6 +675,7 @@ var InteractionsView = Backbone.View.extend ({
             seqEndPos = scaledBegin + barLength + ratio * ( data.seqLength - data.endPos );
 
 	var context = data.$elem.getContext( "2d" );
+        context.canvas.height = 60;
 	context.beginPath();
 	context.font = '8pt verdana';
 
@@ -1045,11 +1046,12 @@ var InteractionsView = Backbone.View.extend ({
                     gene2InteractionsUnpacked.push( JSON.parse( item ) );
                 }
             });
-            self.buildCytoscapeGraph( gene1InteractionsUnpacked, gene2InteractionsUnpacked );
+            self.buildCytoscapeGraphData( gene1InteractionsUnpacked, gene2InteractionsUnpacked );
         });
     },
 
-    buildCytoscapeGraph: function( interactions1, interactions2 ) {
+    /** Build data for generating cytoscape graphs */
+    buildCytoscapeGraphData: function( interactions1, interactions2 ) {
         var $el_gene1 = document.getElementById( 'interaction-graph-1' ),
             $el_gene2 = document.getElementById( 'interaction-graph-2' ),
             self = this,
@@ -1079,18 +1081,6 @@ var InteractionsView = Backbone.View.extend ({
             });
         });
 
-        var graphGene1 = cytoscape({
-            container: $el_gene1,
-            elements: {
-                nodes: gene1Nodes,
-                edges: gene1Edges
-            },
-            layout: {
-                name: 'breadthfirst',
-                directed: true
-            }
-        });
-
         var source2 = interactions2[ 0 ][ 5 ];
         gene2Nodes.push( {
             data: { id: source2 }
@@ -1106,17 +1096,54 @@ var InteractionsView = Backbone.View.extend ({
             });
         });
 
-        var graphGene2 = cytoscape({
-            container: $el_gene2,
+        // make call to cytoscape to generate graphs
+        var graphGene1 = self.makeCytoGraph( { elem: $el_gene1, nodes: gene1Nodes, edges: gene1Edges } );
+        var graphGene2 = self.makeCytoGraph( { elem: $el_gene2, nodes: gene2Nodes, edges: gene2Edges } );
+
+        // resize the graphs when window is resized
+        $( window ).resize(function( e ) {
+            graphGene1.resize();
+            graphGene2.resize();
+        });
+    },
+
+    /** Create cytoscape graph */
+    makeCytoGraph: function( data ) {
+        var graph = cytoscape({
+            container: data.elem,
             elements: {
-                nodes: gene2Nodes,
-                edges: gene2Edges
+                nodes: data.nodes,
+                edges: data.edges
             },
             layout: {
-                name: 'breadthfirst',
-                directed: true
-            }
+                name: 'circle'
+            },
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'content': 'data(id)',
+                        'text-opacity': 1,
+                        'text-valign': 'center',
+                        'text-halign': 'right',
+                        'background-color': '#337ab7',
+                        'font-size': '9pt',
+                        'font-family': '"Lucida Grande", verdana, arial, helvetica, sans-serif'
+                    }
+                },
+
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#9dbaea',
+                        'font-size': '9pt',
+                        'font-family': '"Lucida Grande", verdana, arial, helvetica, sans-serif'
+                    }
+                }
+            ]
         });
+        return graph;
     },
 
     /** Build alignment graphics */
