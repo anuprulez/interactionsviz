@@ -1072,13 +1072,46 @@ var InteractionsView = Backbone.View.extend ({
         gene1Nodes.push( {
             data: { id: source1 }
         });
+
+        // alignment scores
+        var scores1 = interactions1.map(function( row ) { 
+                          return row[ 28 ];
+                      });
+        var maxScore1 = scores1.reduce(function(a, b) {
+                            return Math.max(a, b);
+                        });
+
+        var scores2 = interactions2.map(function( row ) { 
+                          return row[ 28 ];
+                      });
+
+        var maxScore2 = scores2.reduce(function(a, b) {
+                            return Math.max(a, b);
+                        });
+
+        // gene expression
+        var expression1 = interactions1.map(function( row ) { 
+                          return row[ 25 ];
+                      });
+        var maxExpr1 = expression1.reduce(function(a, b) {
+                            return Math.max(a, b);
+                        });
+
+        var expression2 = interactions2.map(function( row ) { 
+                          return row[ 24 ];
+                      });
+
+        var maxExpr2 = expression2.reduce(function(a, b) {
+                          return Math.max(a, b);
+                      });
+
         _.each( interactions1, function( item ) {
             var targetGeneId = item[ 5 ];
             gene1Nodes.push( {
-                data: { id: targetGeneId }
+                data: { id: targetGeneId, score: ( item[ 25 ] / maxExpr1 ) }
             });
             gene1Edges.push( {
-                data: { source: source1, target: targetGeneId }
+                data: { source: source1, target: targetGeneId, weight: ( item[ 28 ] / maxScore1 ) }
             });
         });
 
@@ -1090,10 +1123,10 @@ var InteractionsView = Backbone.View.extend ({
         _.each( interactions2, function( item ) {
             var targetGeneId = item[ 4 ];
             gene2Nodes.push( {
-                data: { id: targetGeneId }
+                data: { id: targetGeneId, score: ( item[ 24 ] / maxExpr2 ) }
             });
             gene2Edges.push( {
-                data: { source: source2, target: targetGeneId }
+                data: { source: source2, target: targetGeneId, weight: ( item[ 28 ] / maxScore2 ) }
             });
         });
 
@@ -1117,7 +1150,7 @@ var InteractionsView = Backbone.View.extend ({
                 edges: data.edges
             },
             layout: {
-                name: 'circle'
+                name: 'cose'
             },
             style: [
                 {
@@ -1136,7 +1169,7 @@ var InteractionsView = Backbone.View.extend ({
                 {
                     selector: 'edge',
                     style: {
-                        'width': 2,
+                        'width': 1,
                         'line-color': '#9dbaea',
                         'font-size': '9pt',
                         'font-family': '"Lucida Grande", verdana, arial, helvetica, sans-serif'
