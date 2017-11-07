@@ -1108,7 +1108,7 @@ var InteractionsView = Backbone.View.extend ({
         _.each( interactions1, function( item ) {
             var targetGeneId = item[ 5 ];
             gene1Nodes.push( {
-                data: { id: targetGeneId, score: ( item[ 25 ] / maxExpr1 ) }
+                data: { id: targetGeneId, weight: ( item[ 25 ] / maxExpr1 ) }
             });
             gene1Edges.push( {
                 data: { source: source1, target: targetGeneId, weight: ( item[ 28 ] / maxScore1 ) }
@@ -1123,7 +1123,7 @@ var InteractionsView = Backbone.View.extend ({
         _.each( interactions2, function( item ) {
             var targetGeneId = item[ 4 ];
             gene2Nodes.push( {
-                data: { id: targetGeneId, score: ( item[ 24 ] / maxExpr2 ) }
+                data: { id: targetGeneId, weight: ( item[ 24 ] / maxExpr2 ) }
             });
             gene2Edges.push( {
                 data: { source: source2, target: targetGeneId, weight: ( item[ 28 ] / maxScore2 ) }
@@ -1150,7 +1150,7 @@ var InteractionsView = Backbone.View.extend ({
                 edges: data.edges
             },
             layout: {
-                name: 'cose'
+                name: 'random'
             },
             style: [
                 {
