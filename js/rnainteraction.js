@@ -1150,7 +1150,7 @@ var InteractionsView = Backbone.View.extend ({
                 edges: data.edges
             },
             layout: {
-                name: 'random'
+                name: 'cose'
             },
             style: [
                 {
@@ -1171,6 +1171,8 @@ var InteractionsView = Backbone.View.extend ({
                     style: {
                         'width': 1,
                         'line-color': '#9dbaea',
+                        'curve-style': 'unbundled-bezier',
+                        'target-arrow-shape': 'triangle',
                         'font-size': '9pt',
                         'font-family': '"Lucida Grande", verdana, arial, helvetica, sans-serif'
                     }
