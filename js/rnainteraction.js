@@ -504,7 +504,8 @@ var InteractionsView = Backbone.View.extend ({
                         startPos: item[ 10 ],
                         endPos: item[ 11 ],
                         seqLength: item[ 12 ],
-                        geneid: item[ 4 ]
+                        geneid: item[ 4 ],
+                        symbol1: item[ 6 ]
                     });
                 }
  
@@ -514,10 +515,15 @@ var InteractionsView = Backbone.View.extend ({
                         startPos: item[ 13 ],
                         endPos: item[ 14 ],
                         seqLength: item[ 15 ],
-                        geneid: item[ 5 ]
+                        geneid: item[ 5 ],
+                        symbol2: item[ 7 ]
                     });
                 }
             });
+
+            // sort the lists by symbol names
+            summary_result_alignment1 = _.sortBy( summary_result_alignment1, 'symbol1' );
+            summary_result_alignment2 = _.sortBy( summary_result_alignment2, 'symbol2' );
             
             var plottingData = {
                 'family_names_count': summary_result_type2,
@@ -529,6 +535,7 @@ var InteractionsView = Backbone.View.extend ({
                 'rnaexpr2': summary_result_gene_expr2,
                 'symbol1': summary_result_symbol1
             };
+
             self.cleanSummary();
             var plotPromise = new Promise( function( resolve, reject ) {
                 resolve( self.plotInteractions( plottingData ) );
@@ -755,7 +762,9 @@ var InteractionsView = Backbone.View.extend ({
                 length2: JSON.parse( data[ 12 ] ),
                 symbol1: JSON.parse( data[ 13 ] ),
                 geneid1: JSON.parse( data[ 14 ] ),
-                geneid2: JSON.parse( data[ 15 ] )
+                geneid2: JSON.parse( data[ 15 ] ),
+                symbol_name1: JSON.parse( data[ 16 ] ),
+                symbol_name2: JSON.parse( data[ 17 ] )
             },
                 summary_result_alignment1 = [],
                 summary_result_alignment2 = [],
@@ -770,7 +779,8 @@ var InteractionsView = Backbone.View.extend ({
                         startPos: plotData.start1[ counter ],
                         endPos: plotData.end1[ counter ],
                         seqLength: plotData.length1[ counter ],
-                        geneid: plotData.geneid1[ counter ]
+                        geneid: plotData.geneid1[ counter ],
+                        symbol1: plotData.symbol_name1[ counter ]
                     });
                 }
  
@@ -780,11 +790,16 @@ var InteractionsView = Backbone.View.extend ({
                         startPos: plotData.start2[ counter ],
                         endPos: plotData.end2[ counter ],
                         seqLength: plotData.length2[ counter ],
-                        geneid: plotData.geneid2[ counter ]
+                        geneid: plotData.geneid2[ counter ],
+                        symbol2: plotData.symbol_name2[ counter ]
                     });
                 }
                 counter++; 
             }
+
+            // sort the lists by symbols names
+            summary_result_alignment1 = _.sortBy( summary_result_alignment1, 'symbol1' );
+            summary_result_alignment2 = _.sortBy( summary_result_alignment2, 'symbol2' );
 
             // create a promise to bind the data to html
             var plotsPromise = new Promise( function( resolve, reject ) {
@@ -1030,7 +1045,10 @@ var InteractionsView = Backbone.View.extend ({
     fetchGraphInformation: function( item ) {
         var self = this,
             url = "http://" + self.host + ":" + self.port + "/?graphinfo=true&geneid1=" + item[ 4 ] +
-                  "&geneid2=" + item[ 5 ] + "&filename=" + self.sampleName; 
+                  "&geneid2=" + item[ 5 ] + "&filename=" + self.sampleName,
+            graphLoadingText = "<p class='load-graph'>loading interactions graph...</p>";
+        self.$( "#interaction-graph-1" ).html( graphLoadingText );
+        self.$( "#interaction-graph-2" ).html( graphLoadingText );
         $.get( url, function( data ) {
             data = data.split( '\n\n' );
             gene1Interactions = data[ 0 ].split( '\n' );
@@ -1047,6 +1065,8 @@ var InteractionsView = Backbone.View.extend ({
                     gene2InteractionsUnpacked.push( JSON.parse( item ) );
                 }
             });
+            self.$( "#interaction-graph-1" ).empty();
+            self.$( "#interaction-graph-2" ).empty();
             self.buildCytoscapeGraphData( gene1InteractionsUnpacked, gene2InteractionsUnpacked );
         });
     },
@@ -1150,13 +1170,15 @@ var InteractionsView = Backbone.View.extend ({
                 edges: data.edges
             },
             layout: {
-                name: 'cose'
+                name: 'concentric'
             },
             style: [
                 {
                     selector: 'node',
                     style: {
                         'content': 'data(id)',
+                        'width': 'mapData(weight, 0, 1, 20, 60)',
+                        'height': 'mapData(weight, 0, 1, 20, 60)',
                         'text-opacity': 1,
                         'text-valign': 'center',
                         'text-halign': 'right',
@@ -1169,9 +1191,9 @@ var InteractionsView = Backbone.View.extend ({
                 {
                     selector: 'edge',
                     style: {
-                        'width': 1,
+                        "width": "mapData(weight, 0, 1, 1, 8)",
                         'line-color': '#9dbaea',
-                        'curve-style': 'unbundled-bezier',
+                        'curve-style': 'haystack',
                         'target-arrow-shape': 'triangle',
                         'font-size': '9pt',
                         'font-family': '"Lucida Grande", verdana, arial, helvetica, sans-serif'

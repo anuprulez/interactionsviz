@@ -106,6 +106,8 @@ class RNAInteraction:
         symbol1 = dict()
         geneid1 = list()
         geneid2 = list()
+        symbol_name1 = list()
+        symbol_name2 = list()
         for item_x in xrange( 0, len( sample_data ) ):
             row_x = sample_data[ item_x: item_x + 1 ] 
             family_name = row_x[ 'type2' ].values[ 0 ]
@@ -129,6 +131,8 @@ class RNAInteraction:
             length2.append( row_x[ 'length2' ].values[ 0 ] )
             geneid1.append( row_x[ 'geneid1' ].values[ 0 ] )
             geneid2.append( row_x[ 'geneid2' ].values[ 0 ] )
+            symbol_name1.append( row_x[ 'symbol1' ].values[ 0 ] )
+            symbol_name2.append( row_x[ 'symbol2' ].values[ 0 ] )
 
             symbol1_name = row_x[ 'symbol1' ].values[ 0 ]
             if symbol1_name in symbol1:
@@ -152,7 +156,9 @@ class RNAInteraction:
             'length2': length2,
             'symbol1': symbol1,
             'geneid1': geneid1,
-            'geneid2': geneid2
+            'geneid2': geneid2,
+            'symbol_name1' : symbol_name1,
+            'symbol_name2' : symbol_name2
         }
 
     @classmethod
@@ -323,6 +329,8 @@ if __name__ == "__main__":
                 content += json.dumps( data[ "symbol1" ] ) + '\n'
                 content += json.dumps( data[ "geneid1" ] ) + '\n'
                 content += json.dumps( data[ "geneid2" ] ) + '\n'
+                content += json.dumps( data[ "symbol_name1" ] ) + '\n'
+                content += json.dumps( data[ "symbol_name2" ] ) + '\n'
 
             elif( "multisamples" in query ):
                 file_names = RNAInteraction.get_sample_names()
