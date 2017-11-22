@@ -562,7 +562,7 @@ var InteractionsView = Backbone.View.extend ({
     },
 
     /** Build SVG graphics  */
-    buildSVGgraphics: function( alignmentCollection ) {
+    buildSVGgraphics: function( alignmentCollection, geneType ) {
         var tableTemplate = "",
             scale = 100,
             heightDiff = 10,
@@ -571,7 +571,8 @@ var InteractionsView = Backbone.View.extend ({
             xOffset = 10,
             yOffset = 2,
             seqLengthXPos = 200,
-            symbolXPos = 300;
+            symbolXPos = 300,
+            symbolSearchUrl = "";
 
         tableTemplate = '<div><svg height="'+ svgHeight +'" width="500">';
         _.each( alignmentCollection, function( item, index ) {
@@ -581,12 +582,15 @@ var InteractionsView = Backbone.View.extend ({
 	    scaledEnd = parseInt( ratio * item.endPos ) + xOffset,
             barLength = ( item.endPos - item.startPos ),
             seqEndPos = scaledBegin + barLength + ratio * ( item.seqLength - item.endPos );
+            symbolSearchUrl = 'https://www.google.com/search?q=' + ( geneType === 'gene1' ? item.symbol : item.geneid );
 
             tableTemplate += '<line x1="'+ xOffset +'" y1="'+ heightDiff +'" x2="'+ scaledBegin +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
                 '<rect x="'+ scaledBegin +'" y="'+ (heightDiff - 5) +'" width="'+ barLength +'" height="10" style="fill:green" />' +
                 '<line x1="'+ (scaledBegin + barLength) +'" y1="'+ heightDiff +'" x2="'+ seqEndPos +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
                 '<text x="'+ seqLengthXPos +'" y="'+ (heightDiff + yOffset) +'" fill="black">'+ item.seqLength +'</text>' +
-                '<text x="'+ symbolXPos +'" y="'+ (heightDiff + yOffset) +'" fill="black">'+ item.symbol +'</text>';
+                '<a xlink:href="'+ symbolSearchUrl +'" target="_blank">' +
+                    '<text x="'+ symbolXPos +'" y="'+ (heightDiff + yOffset) +'" fill="black">'+ item.symbol +'</text>' +
+                '</a>';
 
              heightDiff += alignmentHeight;
         });
@@ -608,10 +612,10 @@ var InteractionsView = Backbone.View.extend ({
         self.$( '#rna-alignment-graphics1' ).append( "<p>Alignment positions for " + alignment1.length + " interactions on gene1<p>" );
         self.$( '#rna-alignment-graphics2' ).append( "<p>Alignment positions for " + alignment2.length + " interactions on gene2<p>" );
 
-        var template1 = self.buildSVGgraphics( alignment1 )
+        var template1 = self.buildSVGgraphics( alignment1, 'gene1' )
         self.$( '#rna-alignment-graphics1' ).append( template1 );
 
-        var template2 = self.buildSVGgraphics( alignment2 )
+        var template2 = self.buildSVGgraphics( alignment2, 'gene2' )
         self.$( '#rna-alignment-graphics2' ).append( template2 );
     },
 
@@ -1113,14 +1117,14 @@ var InteractionsView = Backbone.View.extend ({
 	    scaledEnd = parseInt( ratio * data.endPos ) + xOffset,
             heightDiff = 30,
             textYDiff = 5,
-            symbolXPos = 150,
             barLength = ( data.endPos - data.startPos ),
             seqEndPos = scaledBegin + barLength + ratio * ( data.seqLength - data.endPos ),
+            seqLengthTextXPos = xOffset + seqEndPos,
             template = "";
 	template = '<line x1="'+ xOffset +'" y1="'+ heightDiff +'" x2="'+ scaledBegin +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
                 '<rect x="'+ scaledBegin +'" y="'+ (heightDiff - 5) +'" width="'+ barLength +'" height="10" style="fill:green" />' +
                 '<line x1="'+ (scaledBegin + barLength) +'" y1="'+ heightDiff +'" x2="'+ seqEndPos +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
-                '<text x="'+ symbolXPos +'" y="'+ (heightDiff + textYDiff) +'" fill="black">'+ data.seqLength +'</text>';
+                '<text x="'+ seqLengthTextXPos +'" y="'+ (heightDiff + textYDiff) +'" fill="black">'+ data.seqLength +'</text>';
         return template;
     },
 
