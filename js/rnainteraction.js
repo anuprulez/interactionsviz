@@ -536,6 +536,9 @@ var InteractionsView = Backbone.View.extend ({
                 'symbol1': summary_result_symbol1
             };
 
+            plottingData.symbol1 = self.mergeFamiliesToOthers( plottingData.symbol1, summary_result_score1.length );
+            plottingData.family_names_count = self.mergeFamiliesToOthers( plottingData.family_names_count, summary_result_score1.length );
+
             self.cleanSummary();
             var plotPromise = new Promise( function( resolve, reject ) {
                 resolve( self.plotInteractions( plottingData ) );
@@ -705,6 +708,9 @@ var InteractionsView = Backbone.View.extend ({
             summary_result_alignment1 = _.sortBy( summary_result_alignment1, 'symbol' );
             summary_result_alignment2 = _.sortBy( summary_result_alignment2, 'symbol' );
 
+            plotData.symbol1 = self.mergeFamiliesToOthers( plotData.symbol1, howMany );
+            plotData.family_names_count = self.mergeFamiliesToOthers( plotData.family_names_count, howMany );
+
             // create a promise to bind the data to html
             var plotsPromise = new Promise( function( resolve, reject ) {
                 resolve( self.plotInteractions( plotData ) );
@@ -717,6 +723,27 @@ var InteractionsView = Backbone.View.extend ({
                 self.$( '.plot-loader' ).remove();
             });
         });
+    },
+
+    /**Merge the families whose counts are very small to none category */
+    mergeFamiliesToOthers: function( symbolsCount, interactionsCount ) {
+        var otherCategoryCount = 0,
+            familiesCount = {};
+        for( var item in symbolsCount ) {
+            var count = symbolsCount[ item ],
+                share = count / interactionsCount;
+            // if the overall share of any family is less than 1%, then merge all these families to "none" category
+            if( share < 0.01 ) {
+                otherCategoryCount += count;
+            }
+            else {
+                familiesCount[ item ] = count;
+            }
+        }
+        if ( otherCategoryCount > 0 ) {
+            familiesCount[ "none" ] = otherCategoryCount;
+        }
+        return familiesCount;
     },
 
     /** Back to all samples view */
@@ -1067,7 +1094,8 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Create cytoscape graph */
     makeCytoGraph: function( data ) {
-        var graph = cytoscape({
+        var self = this, graph = null;
+        graph = cytoscape({
             container: data.elem,
             elements: {
                 nodes: data.nodes,
@@ -1105,6 +1133,15 @@ var InteractionsView = Backbone.View.extend ({
                 }
             ]
         });
+
+        // when a node is tapped, make a search with the node's text
+        graph.on( 'tap', 'node', function( ev ) {
+            var query = this.id();
+            self.showInteractions( query );
+            self.$( ".search-gene" ).val( query );
+            self.setDefaultFilters();
+        });
+
         return graph;
     },
 
