@@ -256,3 +256,8 @@ p {
     margin-left: 36%;
 }
 
+
+#rna-alignment-graphics1 svg, #rna-alignment-graphics2 svg {
+    margin-top: 3%;
+}
+

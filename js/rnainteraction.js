@@ -505,7 +505,7 @@ var InteractionsView = Backbone.View.extend ({
                         endPos: item[ 11 ],
                         seqLength: item[ 12 ],
                         geneid: item[ 4 ],
-                        symbol1: item[ 6 ]
+                        symbol: item[ 6 ]
                     });
                 }
  
@@ -516,14 +516,14 @@ var InteractionsView = Backbone.View.extend ({
                         endPos: item[ 14 ],
                         seqLength: item[ 15 ],
                         geneid: item[ 5 ],
-                        symbol2: item[ 7 ]
+                        symbol: item[ 7 ]
                     });
                 }
             });
 
             // sort the lists by symbol names
-            summary_result_alignment1 = _.sortBy( summary_result_alignment1, 'symbol1' );
-            summary_result_alignment2 = _.sortBy( summary_result_alignment2, 'symbol2' );
+            summary_result_alignment1 = _.sortBy( summary_result_alignment1, 'symbol' );
+            summary_result_alignment2 = _.sortBy( summary_result_alignment2, 'symbol' );
             
             var plottingData = {
                 'family_names_count': summary_result_type2,
@@ -561,158 +561,58 @@ var InteractionsView = Backbone.View.extend ({
         self.plotHistogram( data.rnaexpr2, "rna-expr2", 'Gene2 expression distribution for ' + self.sampleName, 'Gene2 Expression', "# Interactions" );
     },
 
+    /** Build SVG graphics  */
+    buildSVGgraphics: function( alignmentCollection ) {
+        var tableTemplate = "",
+            scale = 100,
+            heightDiff = 10,
+            alignmentHeight = 30,
+            svgHeight = alignmentCollection.length * alignmentHeight,
+            xOffset = 10,
+            yOffset = 2,
+            seqLengthXPos = 200,
+            symbolXPos = 300;
+
+        tableTemplate = '<div><svg height="'+ svgHeight +'" width="500">';
+        _.each( alignmentCollection, function( item, index ) {
+            seq1Scale = item.seqLength < scale ? item.seqLength : scale;
+            ratio = scale / item.seqLength,
+            scaledBegin = parseInt( ratio * item.startPos ) + xOffset,
+	    scaledEnd = parseInt( ratio * item.endPos ) + xOffset,
+            barLength = ( item.endPos - item.startPos ),
+            seqEndPos = scaledBegin + barLength + ratio * ( item.seqLength - item.endPos );
+
+            tableTemplate += '<line x1="'+ xOffset +'" y1="'+ heightDiff +'" x2="'+ scaledBegin +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
+                '<rect x="'+ scaledBegin +'" y="'+ (heightDiff - 5) +'" width="'+ barLength +'" height="10" style="fill:green" />' +
+                '<line x1="'+ (scaledBegin + barLength) +'" y1="'+ heightDiff +'" x2="'+ seqEndPos +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
+                '<text x="'+ seqLengthXPos +'" y="'+ (heightDiff + yOffset) +'" fill="black">'+ item.seqLength +'</text>' +
+                '<text x="'+ symbolXPos +'" y="'+ (heightDiff + yOffset) +'" fill="black">'+ item.symbol +'</text>';
+
+             heightDiff += alignmentHeight;
+        });
+        tableTemplate += '</svg></div>';
+        return tableTemplate;
+    },
+
     /** Make alignment graphics summary for all checked items*/
     makeAlignmentSummary: function( alignment1, alignment2 ) {
         var self = this,
-            heightFactor = 15,
-            canvasHeight1 = alignment1.length * heightFactor,
-            canvasHeight2 = alignment2.length * heightFactor,
-            canvasId1 = "align1-canvas",
-            canvasId2 = "align2-canvas",
-            canvas1 = null,
-            canvas2 = null,
-            context1 = null,
-            context2 = null,
-            heightDiff = 30,
-            canvasWidth = 500,
-            canvasFont = '8pt verdana';
+            scale = 100,
+            ratio = 0,
+            scaledBegin = 0,
+            scaledEnd = 0,
+            barLength = 0;
 
         self.$( '#rna-alignment-graphics1' ).empty();
         self.$( '#rna-alignment-graphics2' ).empty();
         self.$( '#rna-alignment-graphics1' ).append( "<p>Alignment positions for " + alignment1.length + " interactions on gene1<p>" );
         self.$( '#rna-alignment-graphics2' ).append( "<p>Alignment positions for " + alignment2.length + " interactions on gene2<p>" );
-        
-        
-        self.$( '#rna-alignment-graphics1' ).append( "<canvas id="+ canvasId1 +" title='Gene alignment positions'></canvas>" );
-        self.$( '#' + canvasId1 ).addClass( 'alignment-canvas' );
-        canvas1 = document.getElementById( canvasId1 );
-        context1 = canvas1.getContext( "2d" );
-        context1.canvas.height = canvasHeight1 + heightDiff;
-        context1.canvas.width = canvasWidth;
-        context1.font = canvasFont;
 
-        self.$( '#rna-alignment-graphics2' ).append( "<canvas id="+ canvasId2 +" title='Gene alignment positions'></canvas>" );
-        self.$( '#' + canvasId2 ).addClass( 'alignment-canvas' );
-        canvas2 = document.getElementById( canvasId2 );
-        context2 = canvas2.getContext( "2d" );
-        context2.canvas.height = canvasHeight2 + heightDiff;
-        context2.canvas.width = canvasWidth;
-        context2.font = canvasFont;
+        var template1 = self.buildSVGgraphics( alignment1 )
+        self.$( '#rna-alignment-graphics1' ).append( template1 );
 
-        _.each( alignment1, function( item, index ) {
-            // gene1
-            var data1 = item;
-            data1.$elem = canvas1;
-            data1.context = context1;
-            data1.scale = 100;
-            data1.heightDiff = heightDiff;
-            self.drawMultipleGenomicCanvas( data1 );
-            heightDiff += heightFactor;
-        });
-
-        heightDiff = 30;
-        _.each( alignment2, function( item, index ) {
-            // gene2
-            var data2 = alignment2[ index ];
-            data2.$elem = canvas2;
-            data2.context = context2;
-            data2.scale = 100;
-            data2.heightDiff = heightDiff;
-            self.drawMultipleGenomicCanvas( data2 );
-            heightDiff += heightFactor;
-        });
-    },
-
-    /** Draw genomic positions for the selected interactions */
-    drawMultipleGenomicCanvas: function( data ) {
-        var context = data.context,
-            scale = data.seqLength < data.scale ? data.seqLength : data.scale,
-            ratio = scale / data.seqLength,
-            scaledBegin = parseInt( ratio * data.startPos ),
-	    scaledEnd = parseInt( ratio * data.endPos ),
-            textYDiff = 5,
-            textXDiff = 7,
-            scaledTextXDiff = ratio * textXDiff,
-            barLength = ( data.endPos - data.startPos ),
-            geneIdXDiff = 60,
-            seqEndPos = 0;
-
-        context.beginPath();
-        context.textBaseline = "top";
-        context.lineWidth = 2;
-	context.moveTo( 0, data.heightDiff );
-        context.setLineDash([1, 4]);
-        context.lineTo( scaledBegin, data.heightDiff );
-        context.stroke();
-
-        // on the black line, redraw a green line using the aligning positions 
-	context.beginPath();
-        context.setLineDash([]);
-        context.strokeStyle = 'green';
-	context.lineWidth = 10;
-	context.moveTo( scaledBegin, data.heightDiff );
-	context.lineTo( scaledBegin + barLength, data.heightDiff );
-        context.stroke();
-
-        //
-        context.beginPath();
-        context.textBaseline = "top";
-        context.lineWidth = 2;
-        context.setLineDash([1, 4]);
-	context.moveTo( scaledBegin + barLength, data.heightDiff );
-        seqEndPos = scaledBegin + barLength + ratio * ( data.seqLength - data.endPos );
-        context.lineTo( seqEndPos, data.heightDiff );
-	context.fillText( data.seqLength, 180 + textXDiff, data.heightDiff - textYDiff );
-	context.strokeStyle = 'black';
-
-        if( data.geneid ) {
-            context.fillText( data.geneid, 200 + geneIdXDiff, data.heightDiff - textYDiff );
-        }
-	context.stroke();
-    },
-
-    /** Draw alignment using HTML5 canvas */
-    drawCanvas: function( data ) {
-        var scale = data.seqLength < data.scale ? data.seqLength : data.scale,
-            ratio = scale / data.seqLength,
-            scaledBegin = parseInt( ratio * data.startPos ),
-	    scaledEnd = parseInt( ratio * data.endPos ),
-            heightDiff = 30,
-            textYDiff = 10,
-            barLength = ( data.endPos - data.startPos ),
-            seqEndPos = scaledBegin + barLength + ratio * ( data.seqLength - data.endPos );
-
-	var context = data.$elem.getContext( "2d" );
-        context.canvas.height = 60;
-	context.beginPath();
-	context.font = '8pt verdana';
-
-        // first draw a black line of length equal to scale
-	context.strokeStyle = 'black';
-	context.moveTo( 0, heightDiff );
-        context.setLineDash([1, 4]);
-        context.lineTo( scaledBegin, heightDiff );
-	context.textBaseline = "top";
-	context.stroke();
-
-        // on the black line, redraw a green line using the aligning positions 
-	context.beginPath();
-        context.setLineDash([]);
-	context.moveTo( scaledBegin, heightDiff );
-	context.lineTo( scaledBegin + barLength, heightDiff );
-	context.strokeStyle = 'green';
-	context.lineWidth = 10;
-        context.stroke();
-
-        context.beginPath();
-        context.textBaseline = "top";
-        context.lineWidth = 2;
-        context.setLineDash([1, 4]);
-	context.moveTo( scaledBegin + barLength, heightDiff );
-        context.lineTo( seqEndPos, heightDiff );
-	context.fillText( data.seqLength, seqEndPos + 5, heightDiff );
-	context.strokeStyle = 'black';
-        context.stroke();
+        var template2 = self.buildSVGgraphics( alignment2 )
+        self.$( '#rna-alignment-graphics2' ).append( template2 );
     },
 
     /** Fetch summary data from server */
@@ -780,7 +680,7 @@ var InteractionsView = Backbone.View.extend ({
                         endPos: plotData.end1[ counter ],
                         seqLength: plotData.length1[ counter ],
                         geneid: plotData.geneid1[ counter ],
-                        symbol1: plotData.symbol_name1[ counter ]
+                        symbol: plotData.symbol_name1[ counter ]
                     });
                 }
  
@@ -791,15 +691,15 @@ var InteractionsView = Backbone.View.extend ({
                         endPos: plotData.end2[ counter ],
                         seqLength: plotData.length2[ counter ],
                         geneid: plotData.geneid2[ counter ],
-                        symbol2: plotData.symbol_name2[ counter ]
+                        symbol: plotData.symbol_name2[ counter ]
                     });
                 }
                 counter++; 
             }
 
             // sort the lists by symbols names
-            summary_result_alignment1 = _.sortBy( summary_result_alignment1, 'symbol1' );
-            summary_result_alignment2 = _.sortBy( summary_result_alignment2, 'symbol2' );
+            summary_result_alignment1 = _.sortBy( summary_result_alignment1, 'symbol' );
+            summary_result_alignment2 = _.sortBy( summary_result_alignment2, 'symbol' );
 
             // create a promise to bind the data to html
             var plotsPromise = new Promise( function( resolve, reject ) {
@@ -1204,30 +1104,48 @@ var InteractionsView = Backbone.View.extend ({
         return graph;
     },
 
+    /** Draw alignment using SVG */
+    drawSingleSvg: function( data ) {
+        var scale = data.seqLength < data.scale ? data.seqLength : data.scale,
+            ratio = scale / data.seqLength,
+            xOffset = 10,
+            scaledBegin = parseInt( ratio * data.startPos ) + xOffset,
+	    scaledEnd = parseInt( ratio * data.endPos ) + xOffset,
+            heightDiff = 30,
+            textYDiff = 5,
+            symbolXPos = 150,
+            barLength = ( data.endPos - data.startPos ),
+            seqEndPos = scaledBegin + barLength + ratio * ( data.seqLength - data.endPos ),
+            template = "";
+	template = '<line x1="'+ xOffset +'" y1="'+ heightDiff +'" x2="'+ scaledBegin +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
+                '<rect x="'+ scaledBegin +'" y="'+ (heightDiff - 5) +'" width="'+ barLength +'" height="10" style="fill:green" />' +
+                '<line x1="'+ (scaledBegin + barLength) +'" y1="'+ heightDiff +'" x2="'+ seqEndPos +'" y2="'+ heightDiff +'" style="stroke:black;stroke-width:2" />' +
+                '<text x="'+ symbolXPos +'" y="'+ (heightDiff + textYDiff) +'" fill="black">'+ data.seqLength +'</text>';
+        return template;
+    },
+
     /** Build alignment graphics */
     buildAligmentGraphics: function( item ) {
         var self = this,
-            dataCanvas = {};
+            dataGene = {};
 
         // first gene
-        dataCanvas = {
+        dataGene = {
             startPos: item[ 10 ],
             endPos: item[ 11 ],
             seqLength: item[ 12 ],
-            scale: 100,
-            $elem: document.getElementById( "align-pos-1" )
+            scale: 100
         }
-        self.drawCanvas( dataCanvas );
+        $( "#align-pos-1" ).html( self.drawSingleSvg( dataGene ) );
 
         // second gene
-        dataCanvas = {
+        dataGene = {
             startPos: item[ 13 ],
             endPos: item[ 14 ],
             seqLength: item[ 15 ],
-            scale: 100,
-            $elem: document.getElementById( "align-pos-2" )
+            scale: 100
         }
-        self.drawCanvas( dataCanvas );
+        $( "#align-pos-2" ).html( self.drawSingleSvg( dataGene ) );
     },
 
     /** Fetch alignment between two sequences */
@@ -1417,14 +1335,14 @@ var InteractionsView = Backbone.View.extend ({
 
     /** Template for showing information of the selected interaction */
     _templateInformation: function( item, id, file_pos, header_text ) {
-        var canvasTitle = file_pos == 1 ? "Gene aligning positions. The sequence as well as alignment length is scaled to 100 pixels" : "Gene aligning positions";
+        var svgTitle = file_pos == 1 ? "Gene aligning positions. The sequence as well as alignment length is scaled to 100 pixels" : "Gene aligning positions";
         return '<span id="'+ id +'" class="single-interactions-info">' +
 	               '<p><b>Geneid</b>: ' + item[ 4 + file_pos ] + '</p>' +
 	               '<p><b>Symbol</b>: ' + item[ 6 + file_pos ] + '</p>' +
 	               '<p><b>Type</b>: ' + item[ 8 + file_pos ] + '</p>' +
                        '<p><b>Gene Expression </b>: ' + roundPrecision( parseFloat( item[ 24 + file_pos ] ), 1 ) + '</p>' +
 	               '<p><b>Score'+ (file_pos + 1) + '</b>: ' + roundPrecision( parseFloat( item[ 26 + file_pos ] ), 1 ) + '</p>' +
-                       '<p><b>Gene Aligning Positions:</b></p><canvas id=align-pos-'+ (file_pos + 1) +' title="'+ canvasTitle +'"></canvas>' +
+                       '<p><b>Gene Aligning Positions:</b></p><svg height="50" width="300" id="align-pos-'+ (file_pos + 1) +'" title="'+ svgTitle +'"></svg>' +
                        '<p><b>Gene interactions graph:</b></p><div id=interaction-graph-'+ (file_pos + 1) +'></div>' +
 	        '</span>';
     },
