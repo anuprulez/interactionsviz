@@ -996,8 +996,6 @@ var InteractionsView = Backbone.View.extend ({
                     gene2InteractionsUnpacked.push( JSON.parse( item ) );
                 }
             });
-            self.$( "#interaction-graph-1" ).empty();
-            self.$( "#interaction-graph-2" ).empty();
             self.buildCytoscapeGraphData( gene1InteractionsUnpacked, gene2InteractionsUnpacked );
         });
     },
@@ -1025,14 +1023,14 @@ var InteractionsView = Backbone.View.extend ({
         });
 
         // alignment scores
-        var scores1 = interactions1.map(function( row ) { 
+        var scores1 = interactions1.map(function( row ) {
                           return row[ 28 ];
                       });
         var maxScore1 = scores1.reduce(function(a, b) {
                             return Math.max(a, b);
                         });
 
-        var scores2 = interactions2.map(function( row ) { 
+        var scores2 = interactions2.map(function( row ) {
                           return row[ 28 ];
                       });
 
@@ -1082,13 +1080,14 @@ var InteractionsView = Backbone.View.extend ({
         });
 
         // make call to cytoscape to generate graphs
-        var graphGene1 = self.makeCytoGraph( { elem: $el_gene1, nodes: gene1Nodes, edges: gene1Edges } );
-        var graphGene2 = self.makeCytoGraph( { elem: $el_gene2, nodes: gene2Nodes, edges: gene2Edges } );
+        var cytoscapePromise = new Promise( function( resolve, reject ) {
+            resolve( self.makeCytoGraph( { elem: $el_gene1, nodes: gene1Nodes, edges: gene1Edges } ) );
+            resolve( self.makeCytoGraph( { elem: $el_gene2, nodes: gene2Nodes, edges: gene2Edges } ) );
+        });
 
-        // resize the graphs when window is resized
-        $( window ).resize(function( e ) {
-            graphGene1.resize();
-            graphGene2.resize();
+        cytoscapePromise.then(function() {
+            self.$( "#interaction-graph-1" ).find( '.load-graph' ).remove();
+            self.$( "#interaction-graph-2" ).find( '.load-graph' ).remove();
         });
     },
 
@@ -1140,6 +1139,10 @@ var InteractionsView = Backbone.View.extend ({
             self.showInteractions( query );
             self.$( ".search-gene" ).val( query );
             self.setDefaultFilters();
+        });
+
+        $( window ).resize(function( e ) {
+            graph.resize();
         });
 
         return graph;
