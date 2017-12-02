@@ -1135,10 +1135,16 @@ var InteractionsView = Backbone.View.extend ({
 
         // when a node is tapped, make a search with the node's text
         graph.on( 'tap', 'node', function( ev ) {
-            var query = this.id();
-            self.showInteractions( query );
-            self.$( ".search-gene" ).val( query );
-            self.setDefaultFilters();
+            var query = this.id(),
+                conf = window.confirm( "Do you want to make a search for geneid - " + query );
+            if ( conf && conf === true ) {
+                self.showInteractions( query );
+                self.$( ".search-gene" ).val( query );
+                self.setDefaultFilters();
+            }
+            else {
+                return false;
+            }
         });
 
         $( window ).resize(function( e ) {
