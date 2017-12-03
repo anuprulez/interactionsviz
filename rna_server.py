@@ -60,9 +60,9 @@ class RNAInteraction:
             # read file only if it exists
             if os.path.isfile( table_file_path ):
                 # restrict the name of files upto 30 characters
-                short_name = file_name[ 0:self.max_file_name_len ]
-                hdf_file_name = short_name + self.hdf_file_ext
-                list_hdf_files.append( short_name )
+                #short_name = file_name[ 0:self.max_file_name_len ]
+                hdf_file_name = file_name + self.hdf_file_ext
+                list_hdf_files.append( file_name )
                 interactions_dataframe = pd.read_table( table_file_path, sep='\t', index_col=False )
                 interactions_dataframe.to_hdf( file_path + hdf_file_name, file_name, mode="w", complib='blosc', index=None )
                 # add unique id to each interaction
