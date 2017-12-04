@@ -451,9 +451,7 @@ if __name__ == "__main__":
                         elif query.endswith( ".css" ):
                             content_type = "text/css"
                 except Exception as exception:
-                    content = ""
-                    print exception
-                    sys.exit()
+                    continue
         content_length = len( content )
         answer = "HTTP/1.1 200 OK\r\n" \
             "Content-Length: %d\r\n" \
