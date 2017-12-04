@@ -26,16 +26,23 @@ class RNAInteraction:
         """
         Get the path of a file
         """
-        return [ file_item[ "path" ] for file_item in collection if file_item[ "name" ] == file_name ][ 0 ]
+        return [ collection[ file_item ] for file_item in collection if file_item == file_name ][ 0 ]
+
+    @classmethod
+    def get_hdf_file_path( self, path, file_name ):
+        """
+        Get the path of an HDF file
+        """
+        return os.path.dirname( path ) + '/' + file_name + self.hdf_file_ext
 
     @classmethod
     def remove_hdf_files( self, files_list ):
         """
         Remove all HDF files before creating new ones
         """
-        for file in files_list:
+        for item in files_list:
             try:
-                os.remove( file[ "path" ] + file[ "name" ] + self.hdf_file_ext )
+                os.remove( self.get_hdf_file_path( files_list[ item ], item ) )
             except Exception as exception:
                 continue
 
@@ -54,17 +61,12 @@ class RNAInteraction:
         """
         list_hdf_files = []
         for item in files:
-            file_name = item[ "name" ]
-            file_path = item[ "path" ]
-            table_file_path = file_path + file_name + self.tsv_file_ext
+            file_path = files[ item ]
             # read file only if it exists
-            if os.path.isfile( table_file_path ):
-                # restrict the name of files upto 30 characters
-                #short_name = file_name[ 0:self.max_file_name_len ]
-                hdf_file_name = file_name + self.hdf_file_ext
-                list_hdf_files.append( file_name )
-                interactions_dataframe = pd.read_table( table_file_path, sep='\t', index_col=False )
-                interactions_dataframe.to_hdf( file_path + hdf_file_name, file_name, mode="w", complib='blosc', index=None )
+            if os.path.isfile( file_path ):
+                list_hdf_files.append( item )
+                interactions_dataframe = pd.read_table( file_path, sep='\t', index_col=False )
+                interactions_dataframe.to_hdf( self.get_hdf_file_path( file_path, item ), item, mode="w", complib='blosc', index=None )
                 # add unique id to each interaction
                 interactions_dataframe[ "chimeraid" ] = interactions_dataframe[ "chimeraid" ].apply( lambda x: str( uuid.uuid4() ) )
         return list_hdf_files
@@ -78,7 +80,8 @@ class RNAInteraction:
         samples = dict()
         for item in sample_ids:
             samples[ item ] = list()
-            sample_data = pd.read_hdf( self.get_file_path( files_list, item ) + item + self.hdf_file_ext, item, index=None )
+            file_path = self.get_file_path( files_list, item )
+            sample_data = pd.read_hdf( self.get_hdf_file_path( file_path, item ), item, index=None )
             samples[ item ] = sample_data
         return samples
 
@@ -94,7 +97,7 @@ class RNAInteraction:
         elif 'filter_type' in params:
             return self.filter_data( sample_name, sample_path, params )
         else:
-            return pd.read_hdf( sample_path + sample_name + self.hdf_file_ext, sample_name, index=None )
+            return pd.read_hdf( self.get_hdf_file_path( sample_path, sample_name ), sample_name, index=None )
 
     @classmethod
     def get_graph_interactions( self, sample_name, sample_path, geneid1, geneid2 ):
@@ -227,7 +230,7 @@ class RNAInteraction:
 
     @classmethod
     def read_hdf_sample( self, file_name, file_path, sort_by="score", ascending=False ):
-        hdfdata = pd.read_hdf( file_path + file_name + self.hdf_file_ext, file_name )
+        hdfdata = pd.read_hdf( self.get_hdf_file_path( file_path, file_name ), file_name )
         return hdfdata.sort_values( by=sort_by, ascending=ascending )
 
     @classmethod
@@ -305,6 +308,7 @@ if __name__ == "__main__":
         exit( 1 )
     port = int( sys.argv[ 1 ] )
     files_info = json.loads( sys.argv[ 2 ] )
+
     # Create communication socket and listen on port 80.
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -335,13 +339,13 @@ if __name__ == "__main__":
             params = urlparse.parse_qs( parsed_query.query )
             if( "sample_ids" in query ):
                 sample_ids = params[ 'sample_ids' ][ 0 ]
-                samples = rna_interactions.read_samples( sample_ids, files_info[ "files" ] )
+                samples = rna_interactions.read_samples( sample_ids, files_info )
                 matrix = rna_interactions.find_common( samples, sample_ids )
                 for item in matrix:
                     content += str( item[ 0 ] ) + '\n'
 
             elif( "summary_plot" in query ):
-                data = rna_interactions.get_plotting_data( params, files_info[ "files" ] )
+                data = rna_interactions.get_plotting_data( params, files_info )
                 content = json.dumps( data[ 'family_names_count' ] ) + '\n'
                 content += json.dumps( data[ "score" ] ) + '\n'
                 content += json.dumps( data[ "score1" ] ) + '\n'
@@ -362,19 +366,19 @@ if __name__ == "__main__":
                 content += json.dumps( data[ "symbol_name2" ] ) + '\n'
 
             elif( "multisamples" in query ):
-                file_names = rna_interactions.get_sample_names( files_info[ "files" ] )
+                file_names = rna_interactions.get_sample_names( files_info )
                 for name in file_names:
                     content += name + '\n'
 
             elif( "export" in query ):
-                export_data = rna_interactions.get_search_filter_data( params, files_info[ "files" ] )
+                export_data = rna_interactions.get_search_filter_data( params, files_info )
                 if not export_data.empty:
                     for index, row in export_data.iterrows():
                         content += row.to_json( orient='records' ) + '\n'
 
             elif( "sort" in query ):
                 sample_name = params[ 'sample_name' ][ 0 ]
-                sample_path = rna_interactions.get_file_path( files_info[ "files" ], sample_name )
+                sample_path = rna_interactions.get_file_path( files_info, sample_name )
                 sort_by = params[ 'sort_by' ][ 0 ]
                 ascending = False
                 if sort_by == 'energy':
@@ -391,7 +395,7 @@ if __name__ == "__main__":
 
             elif( "filter" in query ):
                 sample_name = params[ 'sample_name' ][ 0 ]
-                sample_path = rna_interactions.get_file_path( files_info[ "files" ], sample_name )
+                sample_path = rna_interactions.get_file_path( files_info, sample_name )
                 filtered_data = rna_interactions.filter_data( sample_name, sample_path, params )
                 total_results = len( filtered_data )
                 if not filtered_data.empty:
@@ -404,7 +408,7 @@ if __name__ == "__main__":
 
             elif( "graphinfo" in query ):
                 sample_name = params[ 'filename' ][ 0 ]
-                sample_path = rna_interactions.get_file_path( files_info[ "files" ], sample_name )
+                sample_path = rna_interactions.get_file_path( files_info, sample_name )
                 geneid1 = params[ 'geneid1' ][ 0 ]
                 geneid2 = params[ 'geneid2' ][ 0 ]
                 interactions = rna_interactions.get_graph_interactions( sample_name, sample_path, geneid1, geneid2 )
@@ -420,7 +424,7 @@ if __name__ == "__main__":
             elif( "?" in query ):
                 search_by = ""
                 sample_name = params[ 'sample_name' ][ 0 ]
-                sample_path = rna_interactions.get_file_path( files_info[ "files" ], sample_name )
+                sample_path = rna_interactions.get_file_path( files_info, sample_name )
                 if 'search' in params:
                     search_by = params[ 'search' ][ 0 ]
                     results = rna_interactions.search_data( sample_name, sample_path, search_by )
